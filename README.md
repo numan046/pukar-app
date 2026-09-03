@@ -95,13 +95,105 @@ A complete, runnable full-stack application:
 /src/lib/workflow.ts       submission → routing → SLA/escalation → resolution
 /src/lib/auth.ts           password hashing + session cookies
 /src/lib/i18n.ts           EN/UR dictionary + RTL
-/src/app/api/              all backend routes
+/src/app/api/              all backend routes (see §3.1 for API documentation)
 /src/app/(citizen pages)   /citizen, /citizen/report, /citizen/complaints, ...
 /src/app/officer/          department officer & supervisor dashboard
 /src/app/dc/ /cmo/ /cm/    government command dashboards
 /src/app/admin/            admin console
 /src/components/           shared UI (badges, cards, maps, nav, AI panels)
 ```
+
+### 3.1 API Endpoints Documentation
+
+All API routes are located in `/src/app/api/`. Below is the complete list:
+
+<details>
+<summary><strong>🔐 Authentication APIs</strong> — <code>/src/app/api/auth/</code></summary>
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/login` | POST | User login (email + password) |
+| `/api/auth/signup` | POST | New citizen registration |
+| `/api/auth/logout` | POST | Clear session cookie |
+| `/api/auth/me` | GET | Get current user session data |
+| `/api/auth/change-password` | POST | Change password (requires auth) |
+
+</details>
+
+<details>
+<summary><strong>📋 Complaints APIs</strong> — <code>/src/app/api/complaints/</code></summary>
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/complaints` | GET | List complaints (role-based filtering) |
+| `/api/complaints` | POST | Submit new complaint |
+| `/api/complaints/[id]` | GET | Get complaint details |
+| `/api/complaints/[id]/assign` | POST | Officer assigns employee |
+| `/api/complaints/[id]/verify` | POST | Citizen verification (YES/NO) |
+| `/api/complaints/[id]/resolve` | POST | Employee marks resolved |
+| `/api/complaints/[id]/progress` | POST | Add progress update |
+| `/api/complaints/[id]/dispute-action` | POST | Officer handles dispute |
+
+</details>
+
+<details>
+<summary><strong>🏢 Departments & Employees</strong> — <code>/src/app/api/departments/</code> & <code>/src/app/api/employees/</code></summary>
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/departments` | GET | List all departments |
+| `/api/departments` | POST | Create department (admin) |
+| `/api/departments/[id]` | GET | Get department by ID |
+| `/api/departments/[id]` | PUT | Update department |
+| `/api/departments/[id]/assign-officer` | POST | Assign officer to department |
+| `/api/employees` | GET | List employees |
+| `/api/employees` | POST | Create employee |
+| `/api/employees/[id]` | GET | Get employee by ID |
+| `/api/employees/[id]` | PUT | Update employee |
+
+</details>
+
+<details>
+<summary><strong>👔 CMO/CM APIs</strong> — <code>/src/app/api/cmo/</code> & <code>/src/app/api/cm/</code></summary>
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/cmo/analytics` | GET | CMO dashboard analytics |
+| `/api/cmo/complaints` | GET | CMO complaints list |
+| `/api/cmo/districts` | GET | District coverage data |
+| `/api/cmo/officers` | GET | Officer list for CMO |
+| `/api/cmos` | GET | List all CMOs |
+| `/api/cm/analytics` | GET | CM dashboard analytics |
+| `/api/cm/chatbot` | POST | AI chatbot for CM |
+| `/api/cm/complaint-map` | GET | Complaint map data |
+
+</details>
+
+<details>
+<summary><strong>🔔 Other APIs</strong> — Various endpoints</summary>
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/notifications` | GET | List user notifications |
+| `/api/notifications` | POST | Create notification |
+| `/api/broadcasts` | GET | List broadcasts |
+| `/api/broadcasts` | POST | Send broadcast |
+| `/api/master-problems` | GET | List master problems |
+| `/api/master-problems/[id]` | GET | Get master problem details |
+| `/api/categories` | GET | List issue categories |
+| `/api/categories` | POST | Create category |
+| `/api/districts` | GET | List districts |
+| `/api/upload` | POST | Upload media file |
+| `/api/lang` | POST | Set user language preference |
+| `/api/ask-ai` | POST | Ask AI question (data-backed) |
+| `/api/executive-brief` | GET | CM executive brief |
+| `/api/risk-signals` | GET | Risk radar signals |
+| `/api/admin/users` | GET/POST/PUT/DELETE | User management (admin) |
+| `/api/seed` | POST | Re-seed database |
+
+</details>
+
+**Note:** All endpoints (except `/api/auth/login`, `/api/auth/signup`, and `/api/seed`) require authentication via session cookies.
 
 ## 4. Environment variables
 
