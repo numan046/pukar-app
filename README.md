@@ -37,25 +37,30 @@ Pukar isn't just another complaint form. It's a **complete intelligent governanc
 
 ### For Citizens 👥
 - **Multi-step complaint wizard** — Text, voice, photo, video, map-based location
+- **Phone number registration** — Citizens can add their phone number during signup for better contact
 - **Real-time tracking** — Live status updates with timeline visualization
 - **Verification system** — Confirm if problems are actually resolved
 - **Safety alerts** — Receive emergency notifications in your area
 - **Problems near me** — Discover reported issues on interactive maps
+- **Profile management** — View and manage personal information including phone number
 
 ### For Government Officers 👔
 - **Role-based dashboards** — Officer, CMO, CM, Admin — each with relevant insights
 - **AI-powered triage** — Automatic classification and priority assignment
 - **SLA management** — Track deadlines and prevent breaches
+- **24-hour assignment rule** — CMO is automatically notified if an officer doesn't assign a complaint to an employee within 24 hours
 - **Master Problems** — See clustered complaints as unified issues
 - **Broadcast system** — Send announcements to citizens
 - **Risk radar** — Predictive analysis for emerging problem areas
+- **Citizen contact info** — View citizen phone numbers on complaint details for direct follow-up
 
 ### For Leadership 🏛️
 - **Executive briefs** — AI-generated summaries from real data
 - **District overview** — Cross-district health monitoring
 - **Performance analytics** — Department-wise resolution rates
-- **Complaint maps** — Geographic visualization of all issues
+- **Complaint maps** — Geographic visualization with citizen contact details in popups
 - **Emergency alerts** — Issue flood risk, safety warnings, etc.
+- **Accountability tracking** — Automatic escalation notifications for unassigned complaints
 
 ---
 
