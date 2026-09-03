@@ -67,6 +67,7 @@ export async function GET() {
           createdAt: c.created_at,
           description: c.description,
           title: c.title,
+          mediaUrls: JSON.parse(c.media_urls || "[]") as string[],
           history: history.map((h: any) => ({ action: h.action, description: h.description, created_at: h.created_at })),
         };
       });
