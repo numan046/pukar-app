@@ -4,6 +4,7 @@ import {
   createNotification, getDepartmentBySlug, createDepartment, getComplaintYearSeq,
   getComplaintById, getOfficerForDepartment, getOfficerForDepartmentDistrict,
   getCmoForDepartment, getUserById, setCitizenVerification, getDistrictByName, listDistricts,
+  listUnassignedComplaintsOlderThan24h, notificationExistsForComplaint,
 } from "@/lib/db/repo";
 import { analyzeComplaint, detectAndCluster } from "@/lib/ai";
 import { newId, complaintCode } from "@/lib/id";
@@ -444,4 +445,37 @@ export function checkOverdue(complaint: ComplaintRow): ComplaintRow {
   const isOverdue = new Date(complaint.deadline).getTime() < Date.now();
   if (!isOverdue) return complaint;
   return complaint;
+}
+
+// ============================================================
+// CHECK UNASSIGNED COMPLAINTS (24h rule) — Notify CMO
+// If a complaint is PENDING for more than 24 hours without being
+// assigned to an employee, notify the department CMO.
+// ============================================================
+export async function checkAndNotifyUnassignedComplaints(departmentId: string): Promise<number> {
+  const complaints = await listUnassignedComplaintsOlderThan24h(departmentId);
+  if (complaints.length === 0) return 0;
+
+  const cmo = await getCmoForDepartment(departmentId);
+  if (!cmo) return 0;
+
+  let notified = 0;
+  for (const c of complaints) {
+    // Avoid duplicate notifications
+    const alreadyNotified = await notificationExistsForComplaint(c.id, "UNASSIGNED_24H");
+    if (alreadyNotified) continue;
+
+    const hoursPending = Math.round((Date.now() - new Date(c.created_at).getTime()) / (1000 * 60 * 60));
+    await createNotification({
+      user_id: cmo.id,
+      complaint_id: c.id,
+      type: "UNASSIGNED_24H",
+      title_en: "Complaint Unassigned for 24+ Hours",
+      title_ur: "شکایت 24 گھنٹے سے تفویض نہیں ہوئی",
+      body_en: `Complaint ${c.complaint_code} (${c.category ?? "Uncategorized"}) has been pending for ${hoursPending} hours without being assigned to any employee. Please take action.`,
+      body_ur: `شکایت ${c.complaint_code} (${c.category ?? "غیر درجہ بند"}) ${hoursPending} گھنٹے سے کسی ملازم کو تفویض نہیں ہوئی ہے۔ براہ کرم کارروائی کریں۔`,
+    });
+    notified++;
+  }
+  return notified;
 }

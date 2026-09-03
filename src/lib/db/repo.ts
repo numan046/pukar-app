@@ -255,6 +255,25 @@ export async function listAllComplaints(): Promise<ComplaintRow[]> {
   return rows as ComplaintRow[];
 }
 
+// Find PENDING complaints older than 24 hours that haven't been assigned
+export async function listUnassignedComplaintsOlderThan24h(departmentId: string): Promise<ComplaintRow[]> {
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { rows } = await getDb().execute({
+    sql: "SELECT * FROM complaints WHERE department_id = ? AND status = 'PENDING' AND created_at < ? AND assigned_employee_id IS NULL ORDER BY created_at ASC",
+    args: [departmentId, twentyFourHoursAgo],
+  });
+  return rows as ComplaintRow[];
+}
+
+// Check if a notification of a specific type already exists for a complaint
+export async function notificationExistsForComplaint(complaintId: string, type: string): Promise<boolean> {
+  const { rows } = await getDb().execute({
+    sql: "SELECT id FROM notifications WHERE complaint_id = ? AND type = ? LIMIT 1",
+    args: [complaintId, type],
+  });
+  return rows.length > 0;
+}
+
 export async function updateComplaint(id: string, fields: Partial<ComplaintRow>) {
   const keys = Object.keys(fields);
   if (keys.length === 0) return;

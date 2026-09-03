@@ -8,6 +8,7 @@ import {
   listComplaintsByDepartmentAndDistrict,
   getDepartment,
 } from "@/lib/db/repo";
+import { checkAndNotifyUnassignedComplaints } from "@/lib/workflow";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -24,6 +25,13 @@ export async function GET() {
   const officers = await listOfficersByDepartment(user.departmentId);
   const employees = await listEmployeesByDepartment(user.departmentId);
   const department = await getDepartment(user.departmentId);
+
+  // Check for unassigned complaints older than 24h and notify CMO
+  try {
+    await checkAndNotifyUnassignedComplaints(user.departmentId);
+  } catch (e) {
+    console.error("[CMO Analytics] Unassigned check failed:", e);
+  }
 
   // District-wise stats
   const districtStats = await Promise.all(districts.map(async d => {
