@@ -168,6 +168,10 @@ export default function CmDashboard() {
   const [showMap, setShowMap] = useState(false);
   const [mapMarkers, setMapMarkers] = useState<any[]>([]);
   const [mapLoading, setMapLoading] = useState(false);
+  const [checkedStatuses, setCheckedStatuses] = useState<Record<string, boolean>>({
+    PENDING: true, ASSIGNED: true, IN_PROGRESS: true, MARKED_RESOLVED: true, RESOLVED: true, OFFICER_REVIEW: true,
+  });
+  const [receiptMarker, setReceiptMarker] = useState<any>(null);
 
   useEffect(() => {
     fetch("/api/cm/analytics").then(r => r.json()).then(setData).finally(() => setLoading(false));
@@ -190,10 +194,34 @@ export default function CmDashboard() {
     setMapLoading(false);
   }
 
+  // Global handler for popup click → open receipt
+  useEffect(() => {
+    if (!showMap) return;
+    (window as any).__pukarOpenReceipt = (markerId: string) => {
+      const marker = mapMarkers.find(m => m.id === markerId);
+      if (marker) setReceiptMarker(marker);
+    };
+    return () => { delete (window as any).__pukarOpenReceipt; };
+  }, [showMap, mapMarkers]);
+
   // Escape HTML to prevent XSS in Leaflet popups
   function escHtml(s: string) {
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
+
+  function toggleStatus(status: string) {
+    setCheckedStatuses(prev => ({ ...prev, [status]: !prev[status] }));
+  }
+
+  function toggleAllStatuses(checked: boolean) {
+    setCheckedStatuses({
+      PENDING: checked, ASSIGNED: checked, IN_PROGRESS: checked,
+      MARKED_RESOLVED: checked, RESOLVED: checked, OFFICER_REVIEW: checked,
+    });
+  }
+
+  const allChecked = Object.values(checkedStatuses).every(Boolean);
+  const filteredMarkers = mapMarkers.filter(m => checkedStatuses[m.status]);
 
   async function sendBroadcast() {
     if (!bcTitle || !bcMessage || selectedCmos.length === 0) return;
@@ -404,30 +432,49 @@ export default function CmDashboard() {
               <div className="flex items-center gap-2 min-w-0">
                 <MapPin size={18} className="text-brand-600 shrink-0" />
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 truncate">Pakistan Complaint Map</h2>
-                {mapMarkers.length > 0 && (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{mapMarkers.length} complaints</span>
-                )}
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{filteredMarkers.length} / {mapMarkers.length} complaints</span>
               </div>
               <button onClick={() => setShowMap(false)} className="rounded-lg p-1.5 hover:bg-slate-100 transition-colors">
                 <X size={20} className="text-slate-500" />
               </button>
             </div>
-            {/* Legend */}
+            {/* Legend with checkboxes */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-4 border-b border-slate-100 bg-slate-50 px-3 sm:px-5 py-2 text-xs">
-              <span className="font-medium text-slate-500">Status:</span>
-              <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-yellow-500" /> Pending</span>
-              <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-orange-500" /> Assigned</span>
-              <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-blue-600" /> In Progress</span>
-              <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-cyan-500" /> Marked Resolved</span>
-              <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-green-600" /> Resolved</span>
-              <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full bg-red-600" /> Officer Review</span>
+              <label className="flex items-center gap-1 cursor-pointer font-medium text-slate-500">
+                <input type="checkbox" checked={allChecked} onChange={e => toggleAllStatuses(e.target.checked)} className="rounded border-slate-300" />
+                All
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" checked={checkedStatuses.PENDING} onChange={() => toggleStatus("PENDING")} className="rounded border-slate-300" />
+                <span className="inline-block h-3 w-3 rounded-full bg-yellow-500" /> Pending
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" checked={checkedStatuses.ASSIGNED} onChange={() => toggleStatus("ASSIGNED")} className="rounded border-slate-300" />
+                <span className="inline-block h-3 w-3 rounded-full bg-orange-500" /> Assigned
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" checked={checkedStatuses.IN_PROGRESS} onChange={() => toggleStatus("IN_PROGRESS")} className="rounded border-slate-300" />
+                <span className="inline-block h-3 w-3 rounded-full bg-blue-600" /> In Progress
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" checked={checkedStatuses.MARKED_RESOLVED} onChange={() => toggleStatus("MARKED_RESOLVED")} className="rounded border-slate-300" />
+                <span className="inline-block h-3 w-3 rounded-full bg-cyan-500" /> Marked Resolved
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" checked={checkedStatuses.RESOLVED} onChange={() => toggleStatus("RESOLVED")} className="rounded border-slate-300" />
+                <span className="inline-block h-3 w-3 rounded-full bg-green-600" /> Resolved
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" checked={checkedStatuses.OFFICER_REVIEW} onChange={() => toggleStatus("OFFICER_REVIEW")} className="rounded border-slate-300" />
+                <span className="inline-block h-3 w-3 rounded-full bg-red-600" /> Officer Review
+              </label>
             </div>
             {/* Map body */}
             <div className="relative min-h-0 flex-1" style={{ minHeight: "400px" }}>
               {mapLoading ? (
                 <div className="flex h-full items-center justify-center text-slate-400">Loading map data…</div>
-              ) : mapMarkers.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-slate-400">No complaints with location data found.</div>
+              ) : filteredMarkers.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-slate-400">No complaints match the selected filters.</div>
               ) : (
                 <LeafletMap
                   center={[30.3753, 69.3451]}
@@ -435,16 +482,16 @@ export default function CmDashboard() {
                   height="100%"
                   maxBounds={PAKISTAN_BOUNDS}
                   minZoom={5}
-                  markers={mapMarkers.map((m: any) => ({
+                  markers={filteredMarkers.map((m: any) => ({
                     id: m.id,
                     lat: m.lat,
                     lng: m.lng,
                     color: m.color,
-                    label: `<div style="min-width:200px"><b style="font-size:13px">${escHtml(m.category)}</b><br/><span style="color:#64748b;font-size:11px">${escHtml(m.code)} — ${escHtml(m.area)}, ${escHtml(m.district)}</span><br/><span style="color:#475569;font-size:11px">Citizen: ${escHtml(m.citizenName ?? "Unknown")}</span>${m.citizenPhone ? `<br/><span style="color:#059669;font-size:11px;font-weight:600"> ${escHtml(m.citizenPhone)}</span>` : ""}<br/><span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${
+                    label: `<div style="min-width:200px;cursor:pointer" onclick="window.__pukarOpenReceipt('${m.id}')"><b style="font-size:13px">${escHtml(m.category)}</b><br/><span style="color:#64748b;font-size:11px">${escHtml(m.code)} — ${escHtml(m.area)}, ${escHtml(m.district)}</span><br/><span style="color:#475569;font-size:11px">Citizen: ${escHtml(m.citizenName ?? "Unknown")}</span>${m.citizenPhone ? `<br/><span style="color:#059669;font-size:11px;font-weight:600"> ${escHtml(m.citizenPhone)}</span>` : ""}<br/><span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${
                       ({yellow:'#fef9c3',orange:'#ffedd5',blue:'#dbeafe',cyan:'#cffafe',green:'#dcfce7',red:'#fee2e2'} as Record<string,string>)[m.color]||'#f1f5f9'
                     };color:${
                       ({yellow:'#854d0e',orange:'#9a3412',blue:'#1e40af',cyan:'#155e75',green:'#166534',red:'#991b1b'} as Record<string,string>)[m.color]||'#475569'
-                    }">${escHtml(m.status.replace(/_/g,' '))}</span></div>`,
+                    }">${escHtml(m.status.replace(/_/g,' '))}</span><br/><span style="color:#6366f1;font-size:10px;margin-top:3px;display:block">📋 Click for full receipt →</span></div>`,
                   }))}
                 />
               )}
@@ -452,6 +499,142 @@ export default function CmDashboard() {
           </div>
         </div>
       )}
+
+      {/* Receipt Modal */}
+      {receiptMarker && (() => {
+        const m = receiptMarker;
+        const STATUS_FLOW = ["PENDING", "ASSIGNED", "IN_PROGRESS", "MARKED_RESOLVED", "RESOLVED"];
+        const reachedIdx = STATUS_FLOW.indexOf(m.status);
+        const isReview = m.status === "OFFICER_REVIEW";
+        const daysSince = Math.ceil((Date.now() - new Date(m.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+        const daysToDeadline = m.deadline ? Math.ceil((new Date(m.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-2 sm:p-4" onClick={() => setReceiptMarker(null)}>
+            <div className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+              {/* Receipt header */}
+              <div className="sticky top-0 bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between rounded-t-xl">
+                <div>
+                  <div className="font-mono text-xs text-slate-400">{m.code}</div>
+                  <h3 className="text-base font-bold text-slate-900">{m.title || m.category || "Complaint"}</h3>
+                </div>
+                <button onClick={() => setReceiptMarker(null)} className="rounded-lg p-1.5 hover:bg-slate-100">
+                  <X size={18} className="text-slate-500" />
+                </button>
+              </div>
+              <div className="px-5 py-4 space-y-4">
+                {/* Status flow */}
+                <div>
+                  <div className="text-xs font-semibold text-slate-500 mb-2">PROGRESS</div>
+                  <div className="flex items-center gap-1">
+                    {STATUS_FLOW.map((s, idx) => {
+                      const reached = idx <= reachedIdx || isReview;
+                      return (
+                        <div key={s} className="flex flex-1 flex-col items-center">
+                          <div className={`h-1.5 w-full rounded-full ${reached ? "bg-brand-600" : "bg-slate-200"}`} />
+                          <span className={`mt-1 text-[8px] font-medium text-center ${reached ? "text-brand-700" : "text-slate-400"}`}>
+                            {s === "MARKED_RESOLVED" ? "Verify" : s.replace("_", " ")}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-1 text-center">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      m.color === "yellow" ? "bg-yellow-100 text-yellow-800" :
+                      m.color === "orange" ? "bg-orange-100 text-orange-800" :
+                      m.color === "blue" ? "bg-blue-100 text-blue-800" :
+                      m.color === "cyan" ? "bg-cyan-100 text-cyan-800" :
+                      m.color === "green" ? "bg-green-100 text-green-800" :
+                      "bg-red-100 text-red-800"
+                    }`}>{m.status.replace(/_/g, " ")}</span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {m.description && (
+                  <div>
+                    <div className="text-xs font-semibold text-slate-500 mb-1">DESCRIPTION</div>
+                    <p className="text-sm text-slate-700 bg-slate-50 rounded-lg p-3">{m.description}</p>
+                  </div>
+                )}
+
+                {/* Location */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs font-semibold text-slate-500 mb-1">AREA</div>
+                    <div className="text-sm text-slate-700">{m.area}, {m.district}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-slate-500 mb-1">DEPARTMENT</div>
+                    <div className="text-sm text-slate-700">{m.category ?? "Uncategorized"}</div>
+                  </div>
+                </div>
+
+                {/* Citizen & Employee */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg bg-slate-50 p-3">
+                    <div className="text-xs font-semibold text-slate-500 mb-1">CITIZEN</div>
+                    <div className="text-sm font-medium text-slate-800">{m.citizenName ?? "Unknown"}</div>
+                    {m.citizenPhone && <div className="text-xs text-emerald-600 font-medium"> {m.citizenPhone}</div>}
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-3">
+                    <div className="text-xs font-semibold text-slate-500 mb-1">ASSIGNED EMPLOYEE</div>
+                    {m.employeeName ? (
+                      <>
+                        <div className="text-sm font-medium text-slate-800">{m.employeeName}</div>
+                        {m.employeeDesignation && <div className="text-xs text-slate-500">{m.employeeDesignation}</div>}
+                        {m.employeePhone && <div className="text-xs text-emerald-600 font-medium"> {m.employeePhone}</div>}
+                      </>
+                    ) : (
+                      <div className="text-sm text-slate-400">Not assigned</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Timeline */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs font-semibold text-slate-500 mb-1">FILED</div>
+                    <div className="text-sm text-slate-700">{new Date(m.createdAt).toLocaleDateString()}</div>
+                    <div className="text-xs text-slate-400">{daysSince} days ago</div>
+                  </div>
+                  {m.deadline && (
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500 mb-1">DEADLINE</div>
+                      <div className={`text-sm font-medium ${daysToDeadline !== null && daysToDeadline < 0 ? "text-red-600" : "text-slate-700"}`}>
+                        {new Date(m.deadline).toLocaleDateString()}
+                      </div>
+                      {daysToDeadline !== null && <div className={`text-xs ${daysToDeadline < 0 ? "text-red-500" : "text-slate-400"}`}>{daysToDeadline < 0 ? `${Math.abs(daysToDeadline)} days overdue` : `${daysToDeadline} days left`}</div>}
+                    </div>
+                  )}
+                </div>
+
+                {/* History timeline */}
+                {m.history && m.history.length > 0 && (
+                  <div>
+                    <div className="text-xs font-semibold text-slate-500 mb-2">ACTIVITY TIMELINE</div>
+                    <div className="space-y-2">
+                      {m.history.map((h: any, i: number) => (
+                        <div key={i} className="flex gap-2">
+                          <div className="flex flex-col items-center">
+                            <div className="h-2 w-2 rounded-full bg-brand-500 mt-1.5" />
+                            {i < m.history.length - 1 && <div className="w-px flex-1 bg-slate-200" />}
+                          </div>
+                          <div className="flex-1 pb-2">
+                            <div className="text-xs font-medium text-slate-700">{h.action.replace(/_/g, " ")}</div>
+                            {h.description && <div className="text-[11px] text-slate-500">{h.description}</div>}
+                            <div className="text-[10px] text-slate-400">{new Date(h.created_at).toLocaleString()}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Broadcast Modal */}
       {showBroadcast && (
