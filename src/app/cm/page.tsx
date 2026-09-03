@@ -577,9 +577,13 @@ export default function CmDashboard() {
                       <div className="text-xs font-semibold text-slate-500 mb-2">{group.section}</div>
                       <div className="grid grid-cols-3 gap-2">
                         {group.urls.map((url: string, i: number) => {
-                          const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url);
-                          const isVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
-                          const isAudio = /\.(mp3|wav|ogg|aac|m4a)(\?|$)/i.test(url);
+                          // Detect media type from data URL MIME type or file extension
+                          const isDataImage = /^data:image\//i.test(url);
+                          const isDataVideo = /^data:video\//i.test(url);
+                          const isDataAudio = /^data:audio\//i.test(url);
+                          const isImage = isDataImage || /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url);
+                          const isVideo = isDataVideo || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
+                          const isAudio = isDataAudio || /\.(mp3|wav|ogg|aac|m4a)(\?|$)/i.test(url);
                           const mediaType = isImage ? "image" : isVideo ? "video" : isAudio ? "audio" : "file";
                           return (
                             <button key={i} onClick={() => setMediaViewer({ url, type: mediaType })} className="block rounded-lg overflow-hidden border border-slate-200 hover:border-brand-400 transition-colors group cursor-pointer">
