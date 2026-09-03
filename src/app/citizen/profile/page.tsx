@@ -19,6 +19,7 @@ export default function ProfilePage() {
       <Card className="flex flex-col gap-3 p-5">
         <Field label="Name" value={user.name} />
         <Field label="Email" value={user.email} />
+        {user.phone && <Field label="Phone" value={user.phone} />}
         <Field label="Role" value={user.role.replaceAll("_", " ")} />
       </Card>
       <Card className="p-5">

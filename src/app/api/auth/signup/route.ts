@@ -4,7 +4,7 @@ import { hashPassword, setSessionCookie } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password } = await req.json();
+    const { name, email, password, phone } = await req.json();
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Name, email and password are required." }, { status: 400 });
     }
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       email,
       password_hash: hashPassword(password),
       role: "CITIZEN",
-      phone: null,
+      phone: phone?.trim() || null,
       department_id: null,
       district_id: null,
       designation: null,
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       must_change_password: 0,
     });
     await setSessionCookie(user.id);
-    return NextResponse.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    return NextResponse.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone } });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Unable to create account right now." }, { status: 500 });

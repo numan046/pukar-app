@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
         name: user.name,
         email: user.email,
         role: user.role,
+        phone: user.phone,
         departmentId: user.department_id,
         language: user.language,
         mustChangePassword: !!user.must_change_password,

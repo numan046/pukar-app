@@ -440,7 +440,7 @@ export default function CmDashboard() {
                     lat: m.lat,
                     lng: m.lng,
                     color: m.color,
-                    label: `<div style="min-width:200px"><b style="font-size:13px">${escHtml(m.category)}</b><br/><span style="color:#64748b;font-size:11px">${escHtml(m.code)} — ${escHtml(m.area)}, ${escHtml(m.district)}</span><br/><span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${
+                    label: `<div style="min-width:200px"><b style="font-size:13px">${escHtml(m.category)}</b><br/><span style="color:#64748b;font-size:11px">${escHtml(m.code)} — ${escHtml(m.area)}, ${escHtml(m.district)}</span><br/><span style="color:#475569;font-size:11px">Citizen: ${escHtml(m.citizenName ?? "Unknown")}</span>${m.citizenPhone ? `<br/><span style="color:#059669;font-size:11px;font-weight:600"> ${escHtml(m.citizenPhone)}</span>` : ""}<br/><span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${
                       ({yellow:'#fef9c3',orange:'#ffedd5',blue:'#dbeafe',cyan:'#cffafe',green:'#dcfce7',red:'#fee2e2'} as Record<string,string>)[m.color]||'#f1f5f9'
                     };color:${
                       ({yellow:'#854d0e',orange:'#9a3412',blue:'#1e40af',cyan:'#155e75',green:'#166534',red:'#991b1b'} as Record<string,string>)[m.color]||'#475569'

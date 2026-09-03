@@ -217,6 +217,7 @@ export interface SessionUser {
   name: string;
   email: string;
   role: Role;
+  phone: string | null;
   departmentId: string | null;
   districtId: string | null;
   language: Language;

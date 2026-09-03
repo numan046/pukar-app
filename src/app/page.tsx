@@ -55,6 +55,7 @@ export default function HomePage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -121,7 +122,7 @@ export default function HomePage() {
     setLoading(true);
     try {
       const url = mode === "login" ? "/api/auth/login" : "/api/auth/signup";
-      const body = mode === "login" ? { email, password } : { name, email, password };
+      const body = mode === "login" ? { email, password } : { name, email, password, phone: phone.trim() || undefined };
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -254,6 +255,15 @@ export default function HomePage() {
                 placeholder={isUrdu ? "پورا نام" : "Full name"}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                className="rounded-xl border border-slate-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:bg-white focus:shadow-glow"
+              />
+            )}
+            {mode === "signup" && (
+              <input
+                type="tel"
+                placeholder={isUrdu ? "فون نمبر" : "Phone number"}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 className="rounded-xl border border-slate-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:bg-white focus:shadow-glow"
               />
             )}

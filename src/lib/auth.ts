@@ -79,6 +79,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     name: user.name,
     email: user.email,
     role: user.role,
+    phone: user.phone,
     departmentId: user.department_id,
     districtId: user.district_id,
     language: user.language,
