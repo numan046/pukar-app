@@ -1,347 +1,331 @@
-# PPR AI — Problem Radar
+<div align="center">
 
-**From Complaints to Action.**
-*Detect. Prioritize. Resolve. Prevent.*
+# 📢 Pukar — پکار
 
-An AI-powered public problem intelligence and complaint management platform for
-Pakistani local government. It doesn't just collect citizen complaints — it
-understands them, routes them, prioritizes them, tracks them against SLAs,
-clusters duplicates into real-world "Master Problems," escalates delays up a
-government chain of command, and surfaces emerging risk patterns to
-leadership before they become crises.
+### *آپ کی آواز ، ایک بہتر کل کی بنیاد*
+**From Complaints to Action — Detect. Prioritize. Resolve. Prevent.**
 
-```
-Complaint → Understanding → Classification → Routing → Priority → SLA →
-Resolution → Escalation → Geographic Clustering → Problem Detection →
-Risk Prediction → Preventive Action
-```
+[![Live Demo](https://img.shields.io/badge/Live_Demo-ppr--ai.vercel.app-059669?style=for-the-badge&logo=vercel&logoColor=white)](https://ppr-ai.vercel.app)
+[![Next.js](https://img.shields.io/badge/Next.js_14-App_Router-black?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.0-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](./LICENSE)
+
+**Pukar** is an AI-powered public complaint management platform designed for Pakistani local government. It transforms how citizens report problems and how authorities respond — with intelligent routing, duplicate detection, SLA tracking, and predictive risk analysis.
+
+[🚀 Live Demo](https://ppr-ai.vercel.app) • [📖 Documentation](#-documentation) • [🛠️ Tech Stack](#-tech-stack) • [📸 Screenshots](#-screenshots)
 
 ---
 
-## 1. What was built
+</div>
 
-A complete, runnable full-stack application:
+## ✨ What Makes Pukar Different?
 
-- **Citizen app** (mobile-first): splash → notice → language (EN/UR, full RTL) →
-  login/signup → dashboard → multi-step complaint wizard (text, voice via Web
-  Speech API, photo, video, mandatory map-based location, impact level) → live
-  AI-analysis animation → registered complaint with receipt → complaint
-  tracking with a status timeline → "Problems Near Me" map → safety alerts +
-  notifications → profile.
-- **Department Officer / Supervisor dashboard**: KPI command center, filterable
-  complaint table, complaint detail with AI analysis, evidence, map, actions
-  (accept / start work / request info / resolve with AI-assisted resolution
-  verification), duplicate-detection banner, Master Problems view.
-- **DC (District Command Center)**: district map with priority-colored
-  markers, department performance table, SLA compliance, escalation feed,
-  emergency alert composer, "Ask PPR AI."
-- **CMO (Province Overview)**: cross-district map with red/orange/yellow/green
-  district health, "Ask PPR AI," Predictive Problem Radar (emerging-risk
-  signal detection), emergency alerts.
-- **CM (Executive Overview)**: no complaint table — just an AI-generated
-  executive brief, KPI cards, the risk radar, and "Ask PPR AI."
-- **Admin console**: user directory and SLA-rule configuration.
-- **AI service layer** (`src/lib/ai`): classification/routing/priority,
-  duplicate-complaint clustering into Master Problems, predictive risk
-  radar, AI-assisted resolution-evidence verification, and "Ask PPR AI" — a
-  natural-language query engine that **only ever answers from real data**
-  already in the database (it explicitly says so when it can't answer,
-  rather than inventing a statistic).
-- **Full backend**: authentication, role-based authorization enforced on
-  every API route, SLA/escalation engine (Officer → Supervisor → DC → CMO →
-  CM), notifications, emergency alerts, safe zones, audit logging.
-- **Seed data that tells a story**: the "Area X" scenario (Model Town Sector
-  4, Sialkot) — 17 clustered road-damage/flood-risk complaints with rising
-  daily frequency, one Master Problem, an SLA breach with a live escalation
-  chain already recorded, and an emergency flood-risk alert already issued —
-  plus ~45 additional varied complaints across 7 Pakistani cities so every
-  dashboard looks populated immediately after login.
+Pukar isn't just another complaint form. It's a **complete intelligent governance system** that:
 
-## 2. Tech stack — and one honest deviation from the brief
+- 🧠 **Understands complaints** — AI classifies, prioritizes, and routes automatically
+- 🗺️ **Maps problems geographically** — Live maps with complaint clustering
+- 🔁 **Detects duplicates** — Groups similar complaints into "Master Problems"
+- ⏱️ **Tracks SLAs** — Automatic escalation when deadlines are breached
+- 📊 **Predicts risks** — Emerging risk radar for proactive governance
+- 🌐 **Bilingual** — Full English/Urdu support with RTL layout
+- 📱 **Mobile-first** — Works beautifully on any device
 
-- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Lucide
-  icons, Leaflet/OpenStreetMap for maps (no Google Maps key required).
-- **Backend**: Next.js Route Handlers (API routes) — no separate server.
-- **Database**: **SQLite via Node's built-in `node:sqlite` module**, not
-  Prisma/Postgres as originally requested. Reason: this project was built in
-  a sandboxed environment whose network egress does not allow downloading
-  Prisma's query-engine binary, so Prisma could not be verified as working.
-  Rather than hand you unverified code, the data layer was rebuilt on
-  `node:sqlite` (zero external dependencies, ships with Node 22+), which
-  meant every feature described in this README could actually be run, seeded,
-  and tested end-to-end before delivery. **A hand-written SQL schema
-  (`scripts/schema.sql`) mirrors the relational design from the original
-  spec** (users, districts, departments, complaints, complaint status
-  history, master problems, escalations, notifications, emergency alerts,
-  safe zones, feedback, audit logs, SLA rules) and is straightforward to port
-  to Postgres/Supabase — see §8 below.
-- **AI**: a deterministic, offline "Demo AI Analysis" engine is the default
-  (keyword/heuristic-based classification, priority scoring, confidence
-  scoring, duplicate detection, risk-trend detection) so the demo **never
-  breaks** due to a missing API key or network issue. If `OPENAI_API_KEY` is
-  set, complaint classification calls a real LLM instead and silently falls
-  back to the deterministic engine on any error. The UI always labels which
-  mode produced an analysis ("Demo AI Analysis" badge).
-- **Auth**: scrypt password hashing + HMAC-signed HTTP-only session cookies
-  (no third-party auth dependency, still real hashing/signing, not plaintext).
+---
 
-## 3. Project structure
+## 🎯 Key Features
 
-```
-/scripts/schema.sql        Raw SQL schema (SQLite now, Postgres-portable)
-/scripts/seed.ts           Demo data + the "Area X" storyline
-/src/lib/db/               DB client + repository (all queries live here)
-/src/lib/ai/               classify, duplicate, risk, verification, askAi
-/src/lib/workflow.ts       submission → routing → SLA/escalation → resolution
-/src/lib/auth.ts           password hashing + session cookies
-/src/lib/i18n.ts           EN/UR dictionary + RTL
-/src/app/api/              all backend routes (see §3.1 for API documentation)
-/src/app/(citizen pages)   /citizen, /citizen/report, /citizen/complaints, ...
-/src/app/officer/          department officer & supervisor dashboard
-/src/app/dc/ /cmo/ /cm/    government command dashboards
-/src/app/admin/            admin console
-/src/components/           shared UI (badges, cards, maps, nav, AI panels)
-```
+### For Citizens 👥
+- **Multi-step complaint wizard** — Text, voice, photo, video, map-based location
+- **Real-time tracking** — Live status updates with timeline visualization
+- **Verification system** — Confirm if problems are actually resolved
+- **Safety alerts** — Receive emergency notifications in your area
+- **Problems near me** — Discover reported issues on interactive maps
 
-### 3.1 API Endpoints Documentation
+### For Government Officers 👔
+- **Role-based dashboards** — Officer, CMO, CM, Admin — each with relevant insights
+- **AI-powered triage** — Automatic classification and priority assignment
+- **SLA management** — Track deadlines and prevent breaches
+- **Master Problems** — See clustered complaints as unified issues
+- **Broadcast system** — Send announcements to citizens
+- **Risk radar** — Predictive analysis for emerging problem areas
 
-All API routes are located in `/src/app/api/`. Below is the complete list:
+### For Leadership 🏛️
+- **Executive briefs** — AI-generated summaries from real data
+- **District overview** — Cross-district health monitoring
+- **Performance analytics** — Department-wise resolution rates
+- **Complaint maps** — Geographic visualization of all issues
+- **Emergency alerts** — Issue flood risk, safety warnings, etc.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js 14 (App Router), React 18, TypeScript |
+| **Styling** | Tailwind CSS, custom animations |
+| **Maps** | Leaflet, OpenStreetMap (no API key needed) |
+| **Charts** | Recharts for analytics visualization |
+| **Database** | Turso Cloud SQLite (async, serverless-ready) |
+| **AI** | Deterministic offline engine + optional OpenAI |
+| **Auth** | Custom session cookies with scrypt hashing |
+| **Icons** | Lucide React |
+| **Deployment** | Vercel (serverless) |
+
+---
+
+## 📸 Screenshots
 
 <details>
-<summary><strong>🔐 Authentication APIs</strong> — <code>/src/app/api/auth/</code></summary>
+<summary><b>🏠 Citizen Dashboard</b></summary>
+<br>
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/auth/login` | POST | User login (email + password) |
-| `/api/auth/signup` | POST | New citizen registration |
-| `/api/auth/logout` | POST | Clear session cookie |
-| `/api/auth/me` | GET | Get current user session data |
-| `/api/auth/change-password` | POST | Change password (requires auth) |
+![Citizen Dashboard](./screenshot-test-05-citizen-dashboard.png)
 
 </details>
 
 <details>
-<summary><strong>📋 Complaints APIs</strong> — <code>/src/app/api/complaints/</code></summary>
+<summary><b>📝 Report a Problem</b></summary>
+<br>
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/complaints` | GET | List complaints (role-based filtering) |
-| `/api/complaints` | POST | Submit new complaint |
-| `/api/complaints/[id]` | GET | Get complaint details |
-| `/api/complaints/[id]/assign` | POST | Officer assigns employee |
-| `/api/complaints/[id]/verify` | POST | Citizen verification (YES/NO) |
-| `/api/complaints/[id]/resolve` | POST | Employee marks resolved |
-| `/api/complaints/[id]/progress` | POST | Add progress update |
-| `/api/complaints/[id]/dispute-action` | POST | Officer handles dispute |
+![Report Form](./screenshot-test-06-report-form.png)
 
 </details>
 
 <details>
-<summary><strong>🏢 Departments & Employees</strong> — <code>/src/app/api/departments/</code> & <code>/src/app/api/employees/</code></summary>
+<summary><b>👔 CMO Dashboard</b></summary>
+<br>
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/departments` | GET | List all departments |
-| `/api/departments` | POST | Create department (admin) |
-| `/api/departments/[id]` | GET | Get department by ID |
-| `/api/departments/[id]` | PUT | Update department |
-| `/api/departments/[id]/assign-officer` | POST | Assign officer to department |
-| `/api/employees` | GET | List employees |
-| `/api/employees` | POST | Create employee |
-| `/api/employees/[id]` | GET | Get employee by ID |
-| `/api/employees/[id]` | PUT | Update employee |
+![CMO Dashboard](./screenshot-cmo-dashboard.png)
 
 </details>
 
 <details>
-<summary><strong>👔 CMO/CM APIs</strong> — <code>/src/app/api/cmo/</code> & <code>/src/app/api/cm/</code></summary>
+<summary><b>🏛️ Admin Console</b></summary>
+<br>
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/cmo/analytics` | GET | CMO dashboard analytics |
-| `/api/cmo/complaints` | GET | CMO complaints list |
-| `/api/cmo/districts` | GET | District coverage data |
-| `/api/cmo/officers` | GET | Officer list for CMO |
-| `/api/cmos` | GET | List all CMOs |
-| `/api/cm/analytics` | GET | CM dashboard analytics |
-| `/api/cm/chatbot` | POST | AI chatbot for CM |
-| `/api/cm/complaint-map` | GET | Complaint map data |
+![Admin Dashboard](./screenshot-test-07-admin-dashboard.png)
 
 </details>
 
-<details>
-<summary><strong>🔔 Other APIs</strong> — Various endpoints</summary>
+---
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/notifications` | GET | List user notifications |
-| `/api/notifications` | POST | Create notification |
-| `/api/broadcasts` | GET | List broadcasts |
-| `/api/broadcasts` | POST | Send broadcast |
-| `/api/master-problems` | GET | List master problems |
-| `/api/master-problems/[id]` | GET | Get master problem details |
-| `/api/categories` | GET | List issue categories |
-| `/api/categories` | POST | Create category |
-| `/api/districts` | GET | List districts |
-| `/api/upload` | POST | Upload media file |
-| `/api/lang` | POST | Set user language preference |
-| `/api/ask-ai` | POST | Ask AI question (data-backed) |
-| `/api/executive-brief` | GET | CM executive brief |
-| `/api/risk-signals` | GET | Risk radar signals |
-| `/api/admin/users` | GET/POST/PUT/DELETE | User management (admin) |
-| `/api/seed` | POST | Re-seed database |
+## 🚀 Quick Start
 
-</details>
+### Prerequisites
+- Node.js 22+ (for built-in `node:sqlite` module)
+- npm, yarn, or pnpm
 
-**Note:** All endpoints (except `/api/auth/login`, `/api/auth/signup`, and `/api/seed`) require authentication via session cookies.
-
-## 4. Environment variables
-
-Copy `.env.example` to `.env` (already done for you in this delivery):
-
-| Variable | Required? | Purpose |
-|---|---|---|
-| `DATABASE_URL` | Yes (default provided) | SQLite file path, e.g. `file:./dev.db` (kept for compatibility; the actual DB file lives at `data/ppr.db`) |
-| `SESSION_SECRET` | Recommended | HMAC secret for signing session cookies — change this for any real deployment |
-| `OPENAI_API_KEY` | No | If set, complaint classification uses a live LLM call instead of the offline demo engine |
-| `GOOGLE_MAPS_API_KEY` | No | Not currently wired up — the app uses Leaflet/OpenStreetMap, which needs no key. Kept as a placeholder for a future swap |
-| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | No | Placeholders for a future Supabase/Postgres migration (see §8) |
-
-Never commit real secrets. `SESSION_SECRET` in `.env.example` is a demo
-placeholder — replace it before any non-local deployment.
-
-## 5. How to install and run
-
-Requires **Node.js 22+** (for the built-in `node:sqlite` module).
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/numan046/pukar.git
+cd pukar
+
+# Install dependencies
 npm install
-npm run db:reset      # creates data/ppr.db and seeds demo data
-npm run dev           # http://localhost:3000
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your Turso credentials (optional)
+
+# Seed the database with demo data
+npm run db:seed
+
+# Start development server
+npm run dev
 ```
 
-For a production-style run:
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Demo Accounts
+
+All demo accounts use password: **`Demo@1234`**
+
+| Role | Email | Access |
+|------|-------|--------|
+| 👤 Citizen | `citizen@ppr.ai` | Report complaints, track status |
+| 👮 Department Officer | `gas-officer-sialkot@ppr.ai` | Manage department complaints |
+| 👔 CMO | `gas-cmo@ppr.ai` | Cross-district oversight |
+| 🏛️ CM | `cm@ppr.ai` | Executive overview & analytics |
+| 🔧 Admin | `admin@ppr.ai` | System administration |
+
+---
+
+## 📖 Documentation
+
+### Project Structure
+
+```
+pukar/
+├── scripts/
+│   ├── schema.sql          # Database schema (SQLite/Postgres-portable)
+│   ├── seed.ts             # Demo data seeder
+│   └── migrate.ts          # Database migration script
+├── src/
+│   ├── app/
+│   │   ├── api/            # Backend API routes (see below)
+│   │   ├── citizen/        # Citizen-facing pages
+│   │   ├── officer/        # Department officer dashboard
+│   │   ├── cmo/            # CMO dashboard
+│   │   ├── cm/             # CM dashboard
+│   │   └── admin/          # Admin console
+│   ├── components/         # Shared UI components
+│   ├── lib/
+│   │   ├── ai/            # AI classification & analysis
+│   │   ├── db/            # Database client & repository
+│   │   ├── auth.ts        # Authentication logic
+│   │   ├── workflow.ts    # Complaint workflow engine
+│   │   └── i18n.ts        # Internationalization (EN/UR)
+│   └── types/             # TypeScript type definitions
+└── public/                # Static assets
+```
+
+### API Endpoints
+
+All API routes are in `/src/app/api/`. Key endpoints:
+
+<details>
+<summary><b>🔐 Authentication</b></summary>
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/login` | POST | User login |
+| `/api/auth/signup` | POST | Citizen registration |
+| `/api/auth/logout` | POST | Clear session |
+| `/api/auth/me` | GET | Current user data |
+
+</details>
+
+<details>
+<summary><b>📋 Complaints</b></summary>
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/complaints` | GET | List complaints (role-filtered) |
+| `/api/complaints` | POST | Submit new complaint |
+| `/api/complaints/[id]` | GET | Complaint details |
+| `/api/complaints/[id]/assign` | POST | Assign to employee |
+| `/api/complaints/[id]/verify` | POST | Citizen verification |
+| `/api/complaints/[id]/resolve` | POST | Mark resolved |
+
+</details>
+
+<details>
+<summary><b>🏢 Departments & Employees</b></summary>
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/departments` | GET/POST | List/create departments |
+| `/api/employees` | GET/POST | List/create employees |
+| `/api/districts` | GET | List districts |
+
+</details>
+
+<details>
+<summary><b>📊 Analytics & AI</b></summary>
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/cm/analytics` | GET | CM dashboard data |
+| `/api/cmo/analytics` | GET | CMO dashboard data |
+| `/api/ask-ai` | POST | AI chatbot query |
+| `/api/executive-brief` | GET | AI-generated brief |
+| `/api/risk-signals` | GET | Predictive risk data |
+
+</details>
+
+**Note:** All endpoints except `/api/auth/login`, `/api/auth/signup` require authentication.
+
+---
+
+## 🌍 Deployment
+
+### Deploy to Vercel (Recommended)
 
 ```bash
-npm run build
-npm run start
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy
+vercel --prod
 ```
 
-`npm run db:reset` wipes and reseeds; use `npm run db:seed` to seed without
-wiping an existing schema, or `tsx scripts/migrate.ts` to just (re)apply the
-schema.
+### Environment Variables
 
-## 6. Demo accounts
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `TURSO_DATABASE_URL` | Yes | Turso database URL |
+| `TURSO_AUTH_TOKEN` | Yes | Turso auth token |
+| `SESSION_SECRET` | Yes | Secret for signing session cookies |
+| `OPENAI_API_KEY` | No | Enables real AI classification |
 
-All seeded accounts share the password: **`Demo@1234`**
+---
 
-| Role | Email |
-|---|---|
-| Citizen | `citizen@ppr.ai` |
-| Department Officer | `officer@ppr.ai` |
-| Department Supervisor | `supervisor@ppr.ai` |
-| DC (District Command) | `dc@ppr.ai` |
-| CMO | `cmo@ppr.ai` |
-| CM | `cm@ppr.ai` |
-| Admin | `admin@ppr.ai` |
+## 🔒 Security
 
-(16 additional `citizen.demoN@ppr.ai` accounts exist as authors of the
-seeded Area X complaint cluster — same password.)
+- **Session cookies** — HTTP-only, signed with HMAC-SHA256
+- **Password hashing** — scrypt with random salts
+- **Role-based access** — Every API endpoint enforces authorization
+- **Rate limiting** — Protection against brute force attacks
+- **CSP headers** — Content Security Policy via middleware
+- **No secrets in code** — All sensitive data in environment variables
 
-Public self-signup on the landing page always creates a **Citizen** account;
-government roles are provisioned via seeding/Admin, matching how a real
-deployment would work.
+---
 
-## 7. The demo flow this build supports
+## 🗺️ Roadmap
 
-1. Open the app → 5-second splash → important notice → choose **اردو** or
-   English → log in as `citizen@ppr.ai`.
-2. Tap **Report a Problem** → speak or type *"Hamari road par bara gaddha hai
-   aur barish ke baad pani jama ho raha hai"* → attach a photo → tap the map
-   to set a location in Model Town Sector 4, Sialkot (≈32.4945, 74.5229) →
-   choose impact → submit.
-3. Watch the AI-analysis checklist animation → see the result: **Road
-   Damage · Municipal Corporation · P1 (Critical) · ~85–95% confidence · 12h
-   SLA** → note the "N similar complaints detected nearby" banner (it joins
-   the pre-seeded 17-complaint Area X cluster) → download the receipt.
-4. Log in as `officer@ppr.ai` → see the new complaint (and the whole Area X
-   queue) → open it → see the AI analysis, photo, map, and the "17 similar
-   complaints... Master Problem" banner.
-5. Log in as `dc@ppr.ai` → see the district map with a red/orange hotspot
-   over Area X, department performance table, and a recorded escalation
-   (Officer → Supervisor → DC — already breached in the seed data; submit a
-   few more complaints and wait past the SLA window, or just look at the
-   pre-seeded breach, to see this live).
-6. Log in as `cmo@ppr.ai` → province map with district health colors → open
-   the **Predictive Problem Radar** panel to see the emerging-risk signal
-   for Area X → issue an **Emergency Alert** (flood risk, 5km radius).
-7. Log back in as `citizen@ppr.ai` → see the flood-risk alert in
-   English + Urdu under **Safety Alerts**, plus nearby demo safe zones on
-   the map.
-8. Log in as `cm@ppr.ai` → see the **AI Executive Brief** (generated from
-   real seeded numbers, not scripted text) and ask **"Which district has
-   the highest overdue complaint rate?"** — the answer is computed live
-   from the database.
+- [ ] Push notifications (PWA)
+- [ ] Citizen mobile app (React Native)
+- [ ] Advanced AI with multi-language support
+- [ ] Integration with government GIS systems
+- [ ] Social media complaint ingestion
+- [ ] Automated SLA breach notifications via SMS
 
-## 8. Migrating to PostgreSQL / Supabase for production
+---
 
-The schema in `scripts/schema.sql` uses portable types (`TEXT`, `REAL`,
-`INTEGER`) and no SQLite-specific features beyond `datetime('now')`
-defaults, so moving to Postgres means:
+## 🤝 Contributing
 
-1. Recreate the same tables in Postgres (or feed `schema.sql` through a
-   converter — the column list per table is a direct, one-to-one map).
-2. Swap `src/lib/db/client.ts` for a Postgres client (e.g. `pg` or
-   Supabase's JS client) and update `src/lib/db/repo.ts`'s query calls from
-   the synchronous `node:sqlite` API to async Postgres calls (the function
-   signatures in `repo.ts` are the seam — nothing above that layer needs to
-   change).
-3. If using Supabase, its built-in Auth and Storage can replace the
-   hand-rolled session/upload logic in `src/lib/auth.ts` and
-   `src/app/api/upload/route.ts`.
-4. Point `DATABASE_URL` at the Postgres connection string and set the three
-   `SUPABASE_*` variables if using Supabase.
+Contributions are welcome! Please:
 
-## 9. Known limitations (by design, given hackathon scope)
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-- **AI is a deterministic keyword engine by default.** It's calibrated to
-  handle the demo scenarios well (including mixed English/Roman‑Urdu/Urdu
-  text) but isn't a trained ML model. Supplying `OPENAI_API_KEY` upgrades
-  classification to a real LLM call with the same safety fallback.
-- **File uploads are stored on local disk** (`public/uploads`), which is
-  fine for a demo/single-instance deployment but won't survive a serverless
-  or multi-instance deployment — swap for S3/Supabase Storage in production.
-- **Voice-to-text uses the browser's Web Speech API**, so it only works in
-  browsers that support it (Chrome/Edge) and requires an internet
-  connection at the OS/browser level (Google's speech service) — there is
-  no server-side transcription fallback.
-- **The workflow API doesn't hard-block every theoretically-invalid status
-  transition** (e.g. an officer can technically resolve a complaint that's
-  still `NEEDS_REVIEW` via a direct API call) — the UI only ever exposes the
-  sensible buttons for a complaint's current status, but a stricter
-  server-side state machine would be a good hardening step before
-  production.
-- **Emergency alerts broadcast to all citizens** rather than geo-filtering
-  by the alert radius — noted directly in the code as a demo simplification.
-- **SLA breach/escalation is evaluated lazily** (checked whenever a
-  complaint is read) rather than via a background cron job — correct for a
-  demo, but a real deployment should also run a scheduled job so escalations
-  fire even for complaints nobody has viewed recently.
-- **`node:sqlite` is an experimental Node API** (stable enough for this use
-  case, but Node prints an experimental-feature warning on startup).
+---
 
-## 10. Recommended deployment steps
+## 📄 License
 
-1. Migrate to Postgres/Supabase per §8 (SQLite is great for local dev/demo,
-   not for a scaled multi-instance deployment).
-2. Move file uploads to object storage (S3/Supabase Storage) and swap
-   `resolution_evidence`/`media_urls` URLs accordingly.
-3. Set a strong, unique `SESSION_SECRET` and put the app behind HTTPS.
-4. Add a scheduled job (e.g. a cron-triggered API route or a queue worker)
-   to proactively run SLA/escalation checks instead of only lazily on read.
-5. Deploy the Next.js app to Vercel, or containerize it (the app has no
-   dependency that requires long-running server state beyond the DB
-   connection).
-6. If enabling live AI, set `OPENAI_API_KEY` as a server-only secret (never
-   exposed to the client — it's only read in `src/lib/ai/classify.ts` on
-   the server).
+This project is licensed under the MIT License — see the [LICENSE](./LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Next.js** team for the amazing framework
+- **Turso** for cloud SQLite hosting
+- **Leaflet** for open-source maps
+- **Pakistani local government** for the inspiration and requirements
+
+---
+
+## 📞 Contact
+
+**Live Demo**: [https://ppr-ai.vercel.app](https://ppr-ai.vercel.app)  
+**Repository**: [https://github.com/numan046/pukar](https://github.com/numan046/pukar)
+
+---
+
+<div align="center">
+
+**Made with ❤️ for better governance**
+
+*If this project helps even one citizen get their problem resolved, it's worth it.*
+
+[⭐ Star this repo](https://github.com/numan046/pukar) if you find it useful!
+
+</div>
