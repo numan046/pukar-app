@@ -1,100 +1,56 @@
 # Pukar — AI-Powered Public Complaint Management System
 
-## Short Introduction
+## Project Overview
 
----
+Pukar (پکار) is an intelligent public complaint management platform designed to modernize civic governance in Pakistan. The system bridges the communication gap between citizens and local government authorities by providing a structured, AI-assisted pipeline for reporting, classifying, routing, tracking, and resolving public service complaints.
 
-## The Problem
+## Problem Statement
 
-In Pakistan's local government system, citizens face significant challenges when reporting public problems like broken gas pipelines, electricity failures, road damage, and waterlogging. Complaints often get lost, misrouted, or ignored. There's no intelligent system to prioritize urgent issues, detect duplicate reports from the same area, or predict emerging problems before they become crises. Government officers lack real-time visibility into complaint patterns, and leadership has no way to proactively identify risk areas.
+In Pakistan's local government framework, citizens face significant barriers when attempting to report civic issues such as water supply failures, electricity outages, road damage, and sanitation problems. The existing complaint mechanisms are fragmented, lack transparency, and offer no systematic way to track resolution progress. Government departments, on the other hand, struggle with unstructured complaint intake, manual classification, duplicate reports, and no real-time visibility into service delivery performance across districts. This results in delayed responses, unresolved grievances, and eroded public trust in local governance.
 
----
+## Solution Architecture
 
-## The Solution
+Pukar addresses these challenges through a multi-role platform that serves citizens, department officers, Chief Minister Officers (CMOs), Chief Ministers, and system administrators — each with tailored dashboards and capabilities.
 
-**Pukar** (پکار — meaning "Call" or "Voice" in Urdu) is an AI-powered platform that transforms how citizens report problems and how authorities respond. It doesn't just collect complaints — it understands them, routes them intelligently, tracks them against deadlines, and predicts emerging risks before they escalate.
+### How the AI Component Works
 
----
+The platform employs a dual-layer AI classification engine:
 
-## How Our AI Works
+1. **Deterministic Offline Engine**: A rule-based classification system that analyzes complaint text using keyword matching, pattern recognition, and department-specific heuristics to automatically categorize complaints and assign them to the appropriate department. This ensures the system functions without external API dependencies.
 
-### 1. Intelligent Classification
-When a citizen submits a complaint (via text, voice, photo, or video), our AI engine analyzes the content and automatically:
-- **Classifies** the issue into one of four categories: Gas, Electricity, Road Damage, or Waterlogging
-- **Assigns priority** (P0-Emergency to P3-Low) based on severity indicators
-- **Routes** the complaint to the correct department and district
-- **Confidence scoring** tells officers how certain the AI is about its classification
+2. **Optional LLM Integration**: When an OpenAI API key is configured, the system leverages large language models for more nuanced classification, sentiment analysis, and priority assessment. This layer handles ambiguous or complex complaints that fall outside deterministic rule boundaries.
 
-### 2. Duplicate Detection & Master Problems
-The AI detects when multiple citizens report the same underlying issue (e.g., 17 people reporting potholes on the same road). Instead of treating these as separate complaints, it clusters them into a **"Master Problem"** — giving officers a unified view of the real-world issue and its scale.
+3. **Duplicate Detection and Master Problem Clustering**: The system identifies geographically and semantically similar complaints, grouping them into "Master Problems." This prevents redundant work orders and gives officers a consolidated view of systemic issues affecting multiple citizens.
 
-### 3. Predictive Risk Radar
-By analyzing complaint frequency, geographic clustering, and temporal patterns, the AI identifies **emerging risk signals** — alerting leadership to problems that are growing before they become crises (e.g., rising flood risk in a specific area).
+4. **Predictive Risk Analysis**: By analyzing complaint frequency, geographic concentration, and temporal patterns, the system generates risk signals that alert authorities to emerging problem areas before they escalate into crises.
 
-### 4. AI Executive Briefs
-For Chief Ministers and senior leadership, the AI generates **data-driven executive summaries** from real complaint data — answering questions like "Which district has the highest overdue rate?" without requiring manual analysis.
+### Workflow Intelligence
 
----
+Every complaint follows a structured lifecycle: PENDING → ASSIGNED → IN_PROGRESS → MARKED_RESOLVED → RESOLVED. The system enforces Service Level Agreements (SLAs) with automatic escalation when deadlines approach or are breached. Citizens receive notifications at each stage and can verify whether a reported problem has been genuinely resolved, creating an accountability loop that is absent in traditional systems.
 
-## What Makes Pukar Innovative
+## Innovation and Utility
 
-| Feature | Traditional Systems | Pukar |
-|---------|-------------------|-------|
-| **Routing** | Manual assignment | AI auto-routes to correct department |
-| **Prioritization** | First-come-first-served | AI-based priority scoring |
-| **Duplicates** | Treated as separate | Clustered into Master Problems |
-| **Risk Detection** | Reactive (after crisis) | Predictive (before crisis) |
-| **Language** | English only | Bilingual (English + Urdu with RTL) |
-| **Accessibility** | Desktop-only | Mobile-first, works on any device |
-| **Transparency** | Black box | Citizens track status in real-time |
-| **Accountability** | No deadlines | SLA tracking with automatic escalation |
+What distinguishes Pukar from conventional complaint portals is its integration of intelligence at every stage of the grievance lifecycle:
 
----
+- **Zero-friction reporting**: Citizens can submit complaints via text, voice, photo, video, or map pin — accommodating varying literacy levels and technical capabilities.
+- **Automatic routing**: AI eliminates the need for citizens to know which department handles their issue. The system classifies and routes complaints autonomously.
+- **Geographic intelligence**: Interactive maps with complaint clustering allow officers and leadership to visualize problem density and allocate resources accordingly.
+- **Hierarchical governance**: The platform mirrors Pakistan's administrative structure — from field employees to department officers to CMOs to the Chief Minister — ensuring each level has appropriate visibility and control.
+- **Bilingual accessibility**: Full English and Urdu support with RTL layout ensures the platform is accessible to Pakistan's diverse population.
+- **Executive decision support**: AI-generated executive briefs synthesize raw complaint data into actionable insights for leadership, enabling evidence-based policy decisions.
 
 ## Technology Stack
 
-### Frontend
-- **Next.js 14** with App Router for server-side rendering and fast page loads
-- **React 18** with TypeScript for type-safe, maintainable code
-- **Tailwind CSS** for responsive, mobile-first design
-- **Leaflet + OpenStreetMap** for interactive complaint maps (no API key needed)
-- **Recharts** for analytics visualization
+The platform is built on a modern, production-grade technology stack:
 
-### Backend
-- **Next.js API Routes** — serverless functions, no separate backend server
-- **Turso Cloud SQLite** — cloud-hosted database that works seamlessly with serverless deployment
-- **Custom authentication** — scrypt password hashing + HMAC-signed session cookies
-
-### AI Engine
-- **Deterministic offline engine** — keyword/heuristic-based classification that works without internet or API keys
-- **Optional OpenAI integration** — upgrade to real LLM classification when `OPENAI_API_KEY` is set
-- **Graceful fallback** — if AI service is unavailable, the system continues working with rule-based logic
-
-### Deployment
-- **Vercel** — serverless deployment with automatic scaling
-- **Zero-downtime deployments** — every push to GitHub triggers automatic builds
-
----
+- **Frontend and Backend**: Next.js 14 with the App Router architecture, providing server-side rendering, API routes, and a unified development experience in TypeScript.
+- **Database**: Turso Cloud SQLite — a serverless, edge-distributed database that ensures low-latency data access without requiring dedicated database infrastructure.
+- **Geospatial Visualization**: Leaflet with OpenStreetMap tiles for interactive, API-key-free mapping.
+- **Analytics**: Recharts for real-time data visualization in dashboards.
+- **Styling**: Tailwind CSS for responsive, mobile-first design.
+- **Authentication**: Custom session-based authentication using HTTP-only cookies with HMAC-SHA256 signing and scrypt password hashing.
+- **Deployment**: Vercel serverless infrastructure for automatic scaling and global CDN distribution.
 
 ## Impact
 
-Pukar bridges the gap between citizens and government by:
-- **Reducing response time** through intelligent routing and prioritization
-- **Preventing duplicate work** by clustering similar complaints
-- **Enabling proactive governance** through predictive risk analysis
-- **Increasing transparency** with real-time status tracking
-- **Supporting local languages** to serve all citizens equally
-
-The platform is designed for Pakistani local government but can be adapted for any municipality or public service organization worldwide.
-
----
-
-## Live Demo
-
-**Website**: [https://ppr-ai.vercel.app](https://ppr-ai.vercel.app)  
-**Source Code**: [https://github.com/numan046/pukar-app](https://github.com/numan046/pukar-app)
-
----
-
-*Pukar — آپ کی آواز ، ایک بہتر کل کی بنیاد*  
-*(Your voice, the foundation of a better tomorrow)*
+Pukar demonstrates how AI can be applied to civic technology in resource-constrained environments. By combining deterministic AI (which requires no external services) with optional LLM enhancement, the platform remains functional in low-connectivity scenarios while offering advanced capabilities when infrastructure permits. The system's role-based architecture ensures that every stakeholder — from the citizen filing a complaint to the Chief Minister overseeing provincial governance — has the tools needed to participate effectively in the public service delivery chain.
