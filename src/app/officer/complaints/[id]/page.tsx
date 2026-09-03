@@ -28,6 +28,9 @@ export default function OfficerComplaintDetail() {
   const [disputeNote, setDisputeNote] = useState("");
   const [reassignId, setReassignId] = useState("");
 
+  // Media viewer
+  const [mediaViewer, setMediaViewer] = useState<{ url: string; type: string } | null>(null);
+
   function load() {
     setLoading(true);
     fetch(`/api/complaints/${params.id}`).then(r => r.json()).then(d => {
@@ -150,11 +153,22 @@ export default function OfficerComplaintDetail() {
                       <div className="text-[10px] text-slate-400">{new Date(u.created_at).toLocaleString()}</div>
                       {proofUrls.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-2">
-                          {proofUrls.map((url: string, i: number) =>
-                            url.match(/\.(mp4|webm|mov)$/i) || url.startsWith("data:video")
-                              ? <video key={i} src={url} controls className="h-28 w-28 rounded-lg border border-slate-200 object-cover" />
-                              : <img key={i} src={url} alt="Proof" className="h-28 w-28 rounded-lg border border-slate-200 object-cover" />
-                          )}
+                          {proofUrls.map((url: string, i: number) => {
+                            const isVideo = url.match(/\.(mp4|webm|mov)$/i) || url.startsWith("data:video");
+                            const mediaType = isVideo ? "video" : "image";
+                            return isVideo
+                              ? <button key={i} onClick={() => setMediaViewer({ url, type: "video" })} className="relative h-28 w-28 rounded-lg border border-slate-200 overflow-hidden cursor-pointer group">
+                                  <video src={url} className="h-full w-full object-cover" muted />
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+                                    <div className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center">
+                                      <svg className="w-4 h-4 text-slate-900 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                    </div>
+                                  </div>
+                                </button>
+                              : <button key={i} onClick={() => setMediaViewer({ url, type: "image" })} className="h-28 w-28 rounded-lg border border-slate-200 overflow-hidden cursor-pointer group">
+                                  <img src={url} alt="Proof" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                                </button>;
+                          })}
                         </div>
                       )}
                     </div>
@@ -243,11 +257,21 @@ export default function OfficerComplaintDetail() {
                 <div className="text-sm font-semibold text-emerald-800">Resolution Proof</div>
                 {complaint.resolution_note && <p className="mt-1 text-sm text-emerald-700">{complaint.resolution_note}</p>}
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {proofUrls.map((url: string, i: number) =>
-                    url.match(/\.(mp4|webm|mov)$/i) || url.startsWith("data:video")
-                      ? <video key={i} src={url} controls className="h-28 w-28 rounded-lg border border-emerald-300 object-cover" />
-                      : <img key={i} src={url} alt="Resolution proof" className="h-28 w-28 rounded-lg border border-emerald-300 object-cover" />
-                  )}
+                  {proofUrls.map((url: string, i: number) => {
+                    const isVideo = url.match(/\.(mp4|webm|mov)$/i) || url.startsWith("data:video");
+                    return isVideo
+                      ? <button key={i} onClick={() => setMediaViewer({ url, type: "video" })} className="relative h-28 w-28 rounded-lg border border-emerald-300 overflow-hidden cursor-pointer group">
+                          <video src={url} className="h-full w-full object-cover" muted />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+                            <div className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center">
+                              <svg className="w-4 h-4 text-slate-900 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                          </div>
+                        </button>
+                      : <button key={i} onClick={() => setMediaViewer({ url, type: "image" })} className="h-28 w-28 rounded-lg border border-emerald-300 overflow-hidden cursor-pointer group">
+                          <img src={url} alt="Resolution proof" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                        </button>;
+                  })}
                 </div>
               </Card>
             ) : null;
@@ -318,6 +342,29 @@ export default function OfficerComplaintDetail() {
               </Button>
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* Media Viewer Modal */}
+      {mediaViewer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setMediaViewer(null)}>
+          <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2">
+              <span className="text-sm font-medium text-slate-700 capitalize">{mediaViewer.type} Viewer</span>
+              <button onClick={() => setMediaViewer(null)} className="rounded-lg p-1 hover:bg-slate-100">
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="flex-1 flex items-center justify-center p-4 min-h-0 overflow-auto">
+              {mediaViewer.type === "image" ? (
+                <img src={mediaViewer.url} alt="Full view" className="max-w-full max-h-[70vh] object-contain rounded-lg" />
+              ) : mediaViewer.type === "video" ? (
+                <video src={mediaViewer.url} controls autoPlay className="max-w-full max-h-[70vh] rounded-lg" />
+              ) : (
+                <a href={mediaViewer.url} target="_blank" rel="noopener noreferrer" className="text-brand-600 underline text-sm">Open file in new tab</a>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
