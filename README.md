@@ -13,7 +13,7 @@
 
 **Pukar** is an AI-powered public complaint management platform designed for Pakistani local government. It transforms how citizens report problems and how authorities respond — with intelligent routing, duplicate detection, SLA tracking, and predictive risk analysis.
 
-[🚀 Live Demo](https://ppr-ai.vercel.app) • [📖 Documentation](#-documentation) • [🛠️ Tech Stack](#-tech-stack) • [📸 Screenshots](#-screenshots)
+[🚀 Live Demo](https://ppr-ai.vercel.app) • [📖 Documentation](#-documentation) • [🛠️ Tech Stack](#-tech-stack) • [ Screenshots](#-screenshots)
 
 ---
 
@@ -24,16 +24,16 @@
 Pukar isn't just another complaint form. It's a **complete intelligent governance system** that:
 
 - 🧠 **Understands complaints** — AI classifies, prioritizes, and routes automatically
-- 🗺️ **Maps problems geographically** — Live maps with complaint clustering
+- ️ **Maps problems geographically** — Live maps with complaint clustering
 - 🔁 **Detects duplicates** — Groups similar complaints into "Master Problems"
-- ⏱️ **Tracks SLAs** — Automatic escalation when deadlines are breached
+- ️ **Tracks SLAs** — Automatic escalation when deadlines are breached
 - 📊 **Predicts risks** — Emerging risk radar for proactive governance
-- 🌐 **Bilingual** — Full English/Urdu support with RTL layout
+-  **Bilingual** — Full English/Urdu support with RTL layout
 - 📱 **Mobile-first** — Works beautifully on any device
 
 ---
 
-## 🎯 Key Features
+##  Key Features
 
 ### For Citizens 👥
 - **Multi-step complaint wizard** — Text, voice, photo, video, map-based location
@@ -81,15 +81,15 @@ Pukar isn't just another complaint form. It's a **complete intelligent governanc
 <summary><b>🏠 Citizen Dashboard</b></summary>
 <br>
 
-![Citizen Dashboard](./screenshot-test-05-citizen-dashboard.png)
+![Citizen Dashboard](./screenshots/citizen-dashboard.png)
 
 </details>
 
 <details>
-<summary><b>📝 Report a Problem</b></summary>
+<summary><b> Report a Problem</b></summary>
 <br>
 
-![Report Form](./screenshot-test-06-report-form.png)
+![Report a Problem](./screenshots/report-problem.png)
 
 </details>
 
@@ -97,15 +97,39 @@ Pukar isn't just another complaint form. It's a **complete intelligent governanc
 <summary><b>👔 CMO Dashboard</b></summary>
 <br>
 
-![CMO Dashboard](./screenshot-cmo-dashboard.png)
+![CMO Dashboard](./screenshots/cmo-dashboard.png)
 
 </details>
 
 <details>
-<summary><b>🏛️ Admin Console</b></summary>
+<summary><b>️ Chief Minister Dashboard</b></summary>
 <br>
 
-![Admin Dashboard](./screenshot-test-07-admin-dashboard.png)
+![CM Dashboard](./screenshots/cm-dashboard.png)
+
+</details>
+
+<details>
+<summary><b>🔧 Super Admin Dashboard</b></summary>
+<br>
+
+![Admin Dashboard](./screenshots/admin-dashboard.png)
+
+</details>
+
+<details>
+<summary><b>👮 Department Officer Dashboard</b></summary>
+<br>
+
+![Officer Dashboard](./screenshots/officer-dashboard.png)
+
+</details>
+
+<details>
+<summary><b>👷 Employee Dashboard</b></summary>
+<br>
+
+![Employee Dashboard](./screenshots/employee-dashboard.png)
 
 </details>
 
@@ -121,8 +145,8 @@ Pukar isn't just another complaint form. It's a **complete intelligent governanc
 
 ```bash
 # Clone the repository
-git clone https://github.com/numan046/pukar.git
-cd pukar
+git clone https://github.com/numan046/pukar-app.git
+cd pukar-app
 
 # Install dependencies
 npm install
@@ -159,7 +183,7 @@ All demo accounts use password: **`Demo@1234`**
 ### Project Structure
 
 ```
-pukar/
+pukar-app/
 ├── scripts/
 │   ├── schema.sql          # Database schema (SQLite/Postgres-portable)
 │   ├── seed.ts             # Demo data seeder
@@ -179,7 +203,7 @@ pukar/
 │   │   ├── auth.ts        # Authentication logic
 │   │   ├── workflow.ts    # Complaint workflow engine
 │   │   └── i18n.ts        # Internationalization (EN/UR)
-│   └── types/             # TypeScript type definitions
+│   ── types/             # TypeScript type definitions
 └── public/                # Static assets
 ```
 
@@ -313,10 +337,10 @@ This project is licensed under the MIT License — see the [LICENSE](./LICENSE) 
 
 ---
 
-## 📞 Contact
+##  Contact
 
 **Live Demo**: [https://ppr-ai.vercel.app](https://ppr-ai.vercel.app)  
-**Repository**: [https://github.com/numan046/pukar](https://github.com/numan046/pukar)
+**Repository**: [https://github.com/numan046/pukar-app](https://github.com/numan046/pukar-app)
 
 ---
 
@@ -326,6 +350,6 @@ This project is licensed under the MIT License — see the [LICENSE](./LICENSE) 
 
 *If this project helps even one citizen get their problem resolved, it's worth it.*
 
-[⭐ Star this repo](https://github.com/numan046/pukar) if you find it useful!
+[⭐ Star this repo](https://github.com/numan046/pukar-app) if you find it useful!
 
 </div>
