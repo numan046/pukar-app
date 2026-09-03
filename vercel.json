@@ -1,0 +1,10 @@
+{
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "functions": {
+    "src/app/api/complaints/route.ts": {
+      "maxDuration": 10
+    }
+  }
+}

@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-urdu: "Noto Nastaliq Urdu", serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  @apply text-slate-900 antialiased;
+  overflow-x: hidden;
+  background-color: #f2f7f5;
+  background-image:
+    radial-gradient(1100px 520px at 105% -8%, rgba(26, 176, 130, 0.14), transparent 62%),
+    radial-gradient(900px 480px at -12% 8%, rgba(65, 203, 156, 0.12), transparent 60%),
+    radial-gradient(1000px 600px at 50% 115%, rgba(13, 76, 60, 0.10), transparent 58%),
+    linear-gradient(180deg, #f6faf8 0%, #eef5f2 100%);
+  background-attachment: fixed;
+}
+
+/* ---- Premium surface helpers ---- */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.gradient-text {
+  background: linear-gradient(120deg, #0f9069, #1ab082 45%, #0d4c3c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Slim, subtle scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 92, 71, 0.22);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 92, 71, 0.38);
+}
+
+/* Consistent, calm focus rings */
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid rgba(26, 176, 130, 0.55);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Smooth micro-interactions on common controls */
+:where(button, a, input, select, textarea) {
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease,
+    box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Prevent horizontal scroll from wide content */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Better touch targets on mobile */
+@media (max-width: 640px) {
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+}
+
+[dir="rtl"] body {
+  font-family: var(--font-urdu);
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 1rem;
+  z-index: 0;
+}
+
+@keyframes radar-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.radar-sweep {
+  animation: radar-sweep 3s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes radar-ping {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+.radar-ping {
+  animation: radar-ping 2s ease-out infinite;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.35s ease-out both;
+}
+
+@keyframes pukarGrow {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
