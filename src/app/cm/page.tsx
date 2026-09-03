@@ -209,6 +209,38 @@ export default function CmDashboard() {
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
+  // Helper to render a media item
+  function renderMediaItem(url: string, idx: number) {
+    const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url);
+    const isVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
+    const isAudio = /\.(mp3|wav|ogg|aac|m4a)(\?|$)/i.test(url);
+    return (
+      <a key={`${url}-${idx}`} href={url} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden border border-slate-200 hover:border-brand-400 transition-colors group">
+        {isImage ? (
+          <img src={url} alt={`Attachment ${idx + 1}`} className="w-full h-28 object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+        ) : isVideo ? (
+          <div className="relative w-full h-28 bg-slate-900 flex items-center justify-center">
+            <video src={url} className="w-full h-full object-cover" muted />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                <svg className="w-5 h-5 text-slate-900 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+          </div>
+        ) : isAudio ? (
+          <div className="w-full h-28 bg-gradient-to-br from-purple-50 to-indigo-100 flex flex-col items-center justify-center p-2">
+            <svg className="w-8 h-8 text-purple-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+            <span className="text-[10px] text-purple-700 font-medium">Audio</span>
+          </div>
+        ) : (
+          <div className="w-full h-28 bg-slate-100 flex items-center justify-center">
+            <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+          </div>
+        )}
+      </a>
+    );
+  }
+
   function toggleStatus(status: string) {
     setCheckedStatuses(prev => ({ ...prev, [status]: !prev[status] }));
   }
@@ -558,44 +590,32 @@ export default function CmDashboard() {
                   </div>
                 )}
 
-                {/* Media */}
-                {m.mediaUrls && m.mediaUrls.length > 0 && (
-                  <div>
-                    <div className="text-xs font-semibold text-slate-500 mb-2">MEDIA ATTACHMENTS</div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {m.mediaUrls.map((url: string, i: number) => {
-                        const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url);
-                        const isVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
-                        const isAudio = /\.(mp3|wav|ogg|aac|m4a)(\?|$)/i.test(url);
-                        return (
-                          <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden border border-slate-200 hover:border-brand-400 transition-colors group">
-                            {isImage ? (
-                              <img src={url} alt={`Attachment ${i + 1}`} className="w-full h-28 object-cover group-hover:scale-105 transition-transform" />
-                            ) : isVideo ? (
-                              <div className="relative w-full h-28 bg-slate-900 flex items-center justify-center">
-                                <video src={url} className="w-full h-full object-cover" muted />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-slate-900 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : isAudio ? (
-                              <div className="w-full h-28 bg-gradient-to-br from-purple-50 to-indigo-100 flex flex-col items-center justify-center p-2">
-                                <svg className="w-8 h-8 text-purple-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
-                                <span className="text-[10px] text-purple-700 font-medium">Audio</span>
-                              </div>
-                            ) : (
-                              <div className="w-full h-28 bg-slate-100 flex items-center justify-center">
-                                <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                              </div>
-                            )}
-                          </a>
-                        );
-                      })}
+                {/* Media - All attachments from complaint lifecycle */}
+                {(() => {
+                  const allMedia: { url: string; source: string }[] = [];
+                  // Initial complaint media
+                  (m.mediaUrls || []).forEach((url: string) => allMedia.push({ url, source: "Complaint" }));
+                  // Resolution proof
+                  (m.resolutionProof || []).forEach((url: string) => allMedia.push({ url, source: "Resolution Proof" }));
+                  // Progress update media
+                  (m.updates || []).forEach((u: any) => {
+                    (u.proofUrls || []).forEach((url: string) => allMedia.push({ url, source: u.update_type }));
+                  });
+                  if (allMedia.length === 0) return null;
+                  return (
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500 mb-2">MEDIA ATTACHMENTS ({allMedia.length})</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {allMedia.map((item, i) => (
+                          <div key={i} className="relative">
+                            {renderMediaItem(item.url, i)}
+                            <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded">{item.source}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Location */}
                 <div className="grid grid-cols-2 gap-3">

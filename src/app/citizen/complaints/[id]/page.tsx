@@ -107,8 +107,8 @@ export default function CitizenComplaintDetail() {
               <div className="mt-2 flex flex-wrap gap-2">
                 {proofUrls.map((url: string, i: number) =>
                   url.match(/\.(mp4|webm|mov)$/i) || url.startsWith("data:video")
-                    ? <video key={i} src={url} controls className="h-24 w-24 sm:h-28 sm:w-28 rounded-lg border border-slate-200 object-cover" />
-                    : <img key={i} src={url} alt="Resolution proof" className="h-24 w-24 sm:h-28 sm:w-28 rounded-lg border border-slate-200 object-cover" />
+                    ? <a key={i} href={url} target="_blank" rel="noopener noreferrer"><video src={url} controls className="h-24 w-24 sm:h-28 sm:w-28 rounded-lg border border-slate-200 object-cover hover:border-brand-400 transition-colors" /></a>
+                    : <a key={i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="Resolution proof" className="h-24 w-24 sm:h-28 sm:w-28 rounded-lg border border-slate-200 object-cover hover:border-brand-400 transition-colors" /></a>
                 )}
               </div>
             ) : null;
@@ -166,8 +166,8 @@ export default function CitizenComplaintDetail() {
           <div className="mt-3 flex gap-2 flex-wrap">
             {media.map((url: string, i: number) =>
               url.match(/\.(mp4|webm|mov)$/i) || url.startsWith("data:video")
-                ? <video key={i} src={url} controls className="h-24 w-24 sm:h-32 sm:w-32 rounded-lg object-cover" />
-                : <img key={i} src={url} alt="Evidence" className="h-24 w-24 sm:h-32 sm:w-32 rounded-lg object-cover" />
+                ? <a key={i} href={url} target="_blank" rel="noopener noreferrer"><video src={url} controls className="h-24 w-24 sm:h-32 sm:w-32 rounded-lg object-cover hover:opacity-80 transition-opacity" /></a>
+                : <a key={i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="Evidence" className="h-24 w-24 sm:h-32 sm:w-32 rounded-lg object-cover hover:opacity-80 transition-opacity" /></a>
             )}
           </div>
         )}
@@ -191,8 +191,8 @@ export default function CitizenComplaintDetail() {
                     <div className="mt-2 flex flex-wrap gap-2">
                       {proofUrls.map((url: string, i: number) =>
                         url.match(/\.(mp4|webm|mov)$/i) || url.startsWith("data:video")
-                          ? <video key={i} src={url} controls className="h-28 w-28 rounded-lg border border-slate-200 object-cover" />
-                          : <img key={i} src={url} alt="Proof" className="h-28 w-28 rounded-lg border border-slate-200 object-cover" />
+                          ? <a key={i} href={url} target="_blank" rel="noopener noreferrer"><video src={url} controls className="h-28 w-28 rounded-lg border border-slate-200 object-cover hover:border-brand-400 transition-colors" /></a>
+                          : <a key={i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="Proof" className="h-28 w-28 rounded-lg border border-slate-200 object-cover hover:border-brand-400 transition-colors" /></a>
                       )}
                     </div>
                   )}

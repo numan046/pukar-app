@@ -152,8 +152,8 @@ export default function OfficerComplaintDetail() {
                         <div className="mt-2 flex flex-wrap gap-2">
                           {proofUrls.map((url: string, i: number) =>
                             url.match(/\.(mp4|webm|mov)$/i) || url.startsWith("data:video")
-                              ? <video key={i} src={url} controls className="h-28 w-28 rounded-lg border border-slate-200 object-cover" />
-                              : <img key={i} src={url} alt="Proof" className="h-28 w-28 rounded-lg border border-slate-200 object-cover" />
+                              ? <a key={i} href={url} target="_blank" rel="noopener noreferrer"><video src={url} controls className="h-28 w-28 rounded-lg border border-slate-200 object-cover hover:border-brand-400 transition-colors" /></a>
+                              : <a key={i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="Proof" className="h-28 w-28 rounded-lg border border-slate-200 object-cover hover:border-brand-400 transition-colors" /></a>
                           )}
                         </div>
                       )}
@@ -245,8 +245,8 @@ export default function OfficerComplaintDetail() {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {proofUrls.map((url: string, i: number) =>
                     url.match(/\.(mp4|webm|mov)$/i) || url.startsWith("data:video")
-                      ? <video key={i} src={url} controls className="h-28 w-28 rounded-lg border border-emerald-300 object-cover" />
-                      : <img key={i} src={url} alt="Resolution proof" className="h-28 w-28 rounded-lg border border-emerald-300 object-cover" />
+                      ? <a key={i} href={url} target="_blank" rel="noopener noreferrer"><video src={url} controls className="h-28 w-28 rounded-lg border border-emerald-300 object-cover hover:border-emerald-500 transition-colors" /></a>
+                      : <a key={i} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="Resolution proof" className="h-28 w-28 rounded-lg border border-emerald-300 object-cover hover:border-emerald-500 transition-colors" /></a>
                   )}
                 </div>
               </Card>
