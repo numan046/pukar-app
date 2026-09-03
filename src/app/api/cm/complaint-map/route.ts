@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { listAllComplaints, listDistricts, getUserById, getComplaintHistory } from "@/lib/db/repo";
+import { listAllComplaints, listDistricts, getUserById, getComplaintHistory, getComplaintUpdates } from "@/lib/db/repo";
 
 export async function GET() {
   try {
@@ -13,10 +13,11 @@ export async function GET() {
     const districts = await listDistricts();
     const districtMap = new Map(districts.map(d => [d.id, d.name]));
 
-    // Pre-fetch all citizen users, employee users, and history for lookup
+    // Pre-fetch all citizen users, employee users, history, and updates for lookup
     const citizenCache = new Map<string, { name: string; phone: string | null }>();
     const employeeCache = new Map<string, { name: string; designation: string | null; phone: string | null }>();
     const historyCache = new Map<string, any[]>();
+    const updatesCache = new Map<string, any[]>();
     for (const c of complaints) {
       if (!citizenCache.has(c.citizen_id)) {
         const u = await getUserById(c.citizen_id);
@@ -29,6 +30,10 @@ export async function GET() {
       if (!historyCache.has(c.id)) {
         const hist = await getComplaintHistory(c.id);
         historyCache.set(c.id, hist);
+      }
+      if (!updatesCache.has(c.id)) {
+        const upd = await getComplaintUpdates(c.id);
+        updatesCache.set(c.id, upd);
       }
     }
 
@@ -48,6 +53,9 @@ export async function GET() {
         const citizen = citizenCache.get(c.citizen_id);
         const employee = c.assigned_employee_id ? employeeCache.get(c.assigned_employee_id) : null;
         const history = historyCache.get(c.id) ?? [];
+        const updates = updatesCache.get(c.id) ?? [];
+        let resolutionProof: string[] = [];
+        try { if (c.resolution_proof && c.resolution_proof !== "[]" && c.resolution_proof !== "null") resolutionProof = JSON.parse(c.resolution_proof); } catch {}
         return {
           id: c.id,
           lat: c.latitude,
@@ -68,8 +76,15 @@ export async function GET() {
           description: c.description,
           title: c.title,
           mediaUrls: JSON.parse(c.media_urls || "[]") as string[],
-          resolutionProof: c.resolution_proof ? JSON.parse(c.resolution_proof) as string[] : [],
-          resolutionNote: c.resolution_note,
+          resolutionProof,
+          resolutionNote: c.resolution_note ?? null,
+          updates: updates.map((u: any) => ({
+            id: u.id,
+            update_type: u.update_type,
+            message: u.message,
+            created_at: u.created_at,
+            proofUrls: (() => { try { return u.proof_data && u.proof_data !== "[]" && u.proof_data !== "null" ? JSON.parse(u.proof_data) : []; } catch { return []; } })(),
+          })),
           history: history.map((h: any) => ({ action: h.action, description: h.description, created_at: h.created_at })),
         };
       });
