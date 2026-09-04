@@ -19,8 +19,11 @@ export default function ReportProblemPage() {
   const [recording, setRecording] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [imageName, setImageName] = useState<string | null>(null);
+  const [videoName, setVideoName] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const recordingTimerRef = useRef<any>(null);
 
   // Step 1 — location
   const [mapCenter, setMapCenter] = useState<[number, number]>([32.4945, 74.5229]);
@@ -95,16 +98,97 @@ export default function ReportProblemPage() {
   }
 
   function toggleVoice() {
+    // Clear any pending recording timer
+    if (recordingTimerRef.current) {
+      clearTimeout(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) { setUploadError("Voice input isn't supported in this browser."); return; }
-    if (recording) { recognitionRef.current?.stop(); setRecording(false); return; }
-    const recognition = new SpeechRecognition();
-    recognition.lang = "ur-PK"; recognition.interimResults = false; recognition.continuous = false;
-    recognition.onresult = (e: any) => { const t = e.results?.[0]?.[0]?.transcript ?? ""; setDescription(p => p ? `${p} ${t}` : t); };
-    recognition.onerror = () => setRecording(false);
-    recognition.onend = () => setRecording(false);
-    recognitionRef.current = recognition;
-    recognition.start(); setRecording(true);
+    if (!SpeechRecognition) {
+      setUploadError("Voice input isn't supported in this browser. Please use Chrome or Edge.");
+      return;
+    }
+
+    // If already recording, stop it
+    if (recording) {
+      try { recognitionRef.current?.stop(); } catch {}
+      setRecording(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "ur-PK";
+      recognition.interimResults = false;
+      recognition.continuous = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (e: any) => {
+        const t = e.results?.[0]?.[0]?.transcript ?? "";
+        if (t) {
+          setUploadError(null);
+          setDescription(p => p ? `${p} ${t}` : t);
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        console.error("[Voice] Error:", e.error);
+        setRecording(false);
+        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+          setUploadError("Microphone access denied. Please allow microphone permission in browser settings.");
+        } else if (e.error === "no-speech") {
+          setUploadError("No speech detected. Please try again and speak clearly.");
+        } else if (e.error === "network") {
+          setUploadError("Network error. Voice recognition needs internet. Try typing instead.");
+        } else if (e.error === "language-not-supported") {
+          // Fallback: retry with English
+          setUploadError("Urdu voice not supported, trying English…");
+          try {
+            const fallback = new SpeechRecognition();
+            fallback.lang = "en-US";
+            fallback.interimResults = false;
+            fallback.continuous = false;
+            fallback.onresult = (ev: any) => {
+              const txt = ev.results?.[0]?.[0]?.transcript ?? "";
+              if (txt) { setUploadError(null); setDescription(p => p ? `${p} ${txt}` : txt); }
+            };
+            fallback.onerror = () => { setRecording(false); setUploadError("Voice input failed. Please type your complaint."); };
+            fallback.onend = () => setRecording(false);
+            recognitionRef.current = fallback;
+            fallback.start();
+            return; // Don't clear recording state — we're retrying
+          } catch {
+            setUploadError("Voice input isn't working. Please type your complaint.");
+          }
+        } else {
+          setUploadError("Voice input failed. Please type your complaint instead.");
+        }
+      };
+
+      recognition.onend = () => {
+        setRecording(false);
+        if (recordingTimerRef.current) {
+          clearTimeout(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+      setRecording(true);
+      setUploadError(null);
+
+      // Auto-stop after 30 seconds
+      recordingTimerRef.current = setTimeout(() => {
+        try { recognition.stop(); } catch {}
+        setRecording(false);
+      }, 30000);
+    } catch (err) {
+      console.error("[Voice] Start failed:", err);
+      setRecording(false);
+      setUploadError("Could not start voice recording. Please type your complaint instead.");
+    }
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>, kind: "image" | "video") {
@@ -115,9 +199,12 @@ export default function ReportProblemPage() {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) { setUploadError(data.error || "Upload failed."); return; }
-      if (kind === "image") setImageUrl(data.url); else setVideoUrl(data.url);
+      if (kind === "image") { setImageUrl(data.url); setImageName(file.name); } else { setVideoUrl(data.url); setVideoName(file.name); }
     } catch { setUploadError("Network error while uploading."); }
   }
+
+  function removeImage() { setImageUrl(null); setImageName(null); }
+  function removeVideo() { setVideoUrl(null); setVideoName(null); }
 
   function useCurrentLocation() {
     setLocating(true); setLocationError(null);
@@ -213,7 +300,7 @@ export default function ReportProblemPage() {
         <p className="text-sm text-slate-500">Your complaint has been sent to the department. You will be notified when it is assigned and resolved.</p>
         <div className="flex w-full gap-3">
           <Button className="flex-1" onClick={() => router.push("/citizen/complaints")}>View My Complaints</Button>
-          <Button variant="secondary" className="flex-1" onClick={() => { setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setStep(0); }}>
+          <Button variant="secondary" className="flex-1" onClick={() => { setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoName(null); setStep(0); }}>
             Submit Another
           </Button>
         </div>
@@ -249,15 +336,38 @@ export default function ReportProblemPage() {
               {recording ? "Stop" : "Record voice"}
             </button>
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-              <ImageIcon size={16} />{imageUrl ? "Image added" : "Add photo"}
+              <ImageIcon size={16} />{imageUrl ? (imageName || "Image added") : "Add photo"}
               <input type="file" accept="image/*" className="hidden" onChange={e => handleFileChange(e, "image")} />
             </label>
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-              <Video size={16} />{videoUrl ? "Video added" : "Add video"}
+              <Video size={16} />{videoUrl ? (videoName || "Video added") : "Add video"}
               <input type="file" accept="video/*" className="hidden" onChange={e => handleFileChange(e, "video")} />
             </label>
           </div>
-          {imageUrl && <img src={imageUrl} alt="Evidence" className="h-40 w-full rounded-lg object-cover" />}
+          {imageUrl && (
+            <div className="flex flex-col gap-1.5">
+              <img src={imageUrl} alt="Evidence" className="h-40 w-full rounded-lg object-cover" />
+              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                <span className="truncate text-xs text-slate-600 max-w-[80%]">{imageName}</span>
+                <button type="button" onClick={removeImage} className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Remove
+                </button>
+              </div>
+            </div>
+          )}
+          {videoUrl && (
+            <div className="flex flex-col gap-1.5">
+              <video src={videoUrl} className="h-40 w-full rounded-lg object-cover" controls />
+              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                <span className="truncate text-xs text-slate-600 max-w-[80%]">{videoName}</span>
+                <button type="button" onClick={removeVideo} className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Remove
+                </button>
+              </div>
+            </div>
+          )}
           {uploadError && <div className="text-xs text-red-600">{uploadError}</div>}
           {aiSuggesting && <div className="flex items-center gap-2 text-xs text-brand-600"><Loader2 size={14} className="animate-spin" /> AI is suggesting a department…</div>}
           {aiSuggestion && !aiSuggesting && (
@@ -337,8 +447,8 @@ export default function ReportProblemPage() {
           <Field label="Location" value={`${position?.[0].toFixed(4)}, ${position?.[1].toFixed(4)}${area ? ` — ${area}` : ""}`} />
           <Field label="Department" value={departments.find(d => d.id === selectedDeptId)?.name ?? "—"} />
           {selectedCategoryId && <Field label="Category" value={categories.find(c => c.id === selectedCategoryId)?.name ?? "—"} />}
-          {imageUrl && <Field label="Photo" value="Attached" />}
-          {videoUrl && <Field label="Video" value="Attached" />}
+          {imageUrl && <Field label="Photo" value={imageName || "Attached"} />}
+          {videoUrl && <Field label="Video" value={videoName || "Attached"} />}
           {submitError && <div className="rounded-lg bg-red-50 p-3 text-xs text-red-700">{submitError}</div>}
         </Card>
       )}
