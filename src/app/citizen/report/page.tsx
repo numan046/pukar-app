@@ -275,16 +275,30 @@ export default function ReportProblemPage() {
             <MapPin size={16} /> {locating ? "Locating…" : "Use current location"}
           </Button>
           {locationError && <div className="text-xs text-red-600">{locationError}</div>}
-          <MapClient center={position ?? mapCenter} zoom={10} height={200} interactive
-            maxBounds={PUNJAB_BOUNDS} minZoom={8} boundaryGeoJSON={PUNJAB_BOUNDARY}
-            pickedPosition={position} onPick={(lat, lng) => {
-              if (!isInsidePunjab(lat, lng)) {
-                setLocationError("Please select a location inside Punjab.");
-                return;
-              }
-              setLocationError(null);
-              setPosition([lat, lng]);
-            }} />
+          <div className="sm:hidden">
+            <MapClient center={position ?? mapCenter} zoom={10} height={250} interactive
+              maxBounds={PUNJAB_BOUNDS} minZoom={8} boundaryGeoJSON={PUNJAB_BOUNDARY}
+              pickedPosition={position} onPick={(lat, lng) => {
+                if (!isInsidePunjab(lat, lng)) {
+                  setLocationError("Please select a location inside Punjab.");
+                  return;
+                }
+                setLocationError(null);
+                setPosition([lat, lng]);
+              }} />
+          </div>
+          <div className="hidden sm:block">
+            <MapClient center={position ?? mapCenter} zoom={10} height={300} interactive
+              maxBounds={PUNJAB_BOUNDS} minZoom={8} boundaryGeoJSON={PUNJAB_BOUNDARY}
+              pickedPosition={position} onPick={(lat, lng) => {
+                if (!isInsidePunjab(lat, lng)) {
+                  setLocationError("Please select a location inside Punjab.");
+                  return;
+                }
+                setLocationError(null);
+                setPosition([lat, lng]);
+              }} />
+          </div>
           <p className="text-xs text-slate-500">{position ? "Location set. Tap map to adjust." : "Tap on the map to set the exact location."}</p>
           <input placeholder="Area / neighborhood" value={area} onChange={e => setArea(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500" />
           <input placeholder="Address (optional)" value={address} onChange={e => setAddress(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-brand-500" />

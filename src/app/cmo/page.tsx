@@ -85,7 +85,7 @@ export default function CmoDashboard() {
             Overview of all districts and complaint management
           </p>
         </div>
-        <Button onClick={() => setShowBroadcast(true)} className="flex items-center gap-2 whitespace-nowrap">
+        <Button onClick={() => setShowBroadcast(true)} className="flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto">
           <Megaphone size={16} /> <span className="hidden sm:inline">Send Order to Districts</span><span className="sm:hidden">Send Order</span>
         </Button>
       </div>
@@ -135,76 +135,76 @@ export default function CmoDashboard() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-100 p-2"><TrendingUp size={20} className="text-blue-600" /></div>
-            <div>
-              <div className="text-2xl font-bold text-slate-900">{safeKpis.totalComplaints}</div>
-              <div className="text-xs font-medium text-slate-500">Total Complaints</div>
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="rounded-lg bg-blue-100 p-1.5 sm:p-2"><TrendingUp size={18} className="text-blue-600" /></div>
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl font-bold text-slate-900">{safeKpis.totalComplaints}</div>
+              <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Total Complaints</div>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-green-100 p-2"><CheckCircle size={20} className="text-green-600" /></div>
-            <div>
-              <div className="text-2xl font-bold text-emerald-600">{safeKpis.resolutionRate}%</div>
-              <div className="text-xs font-medium text-slate-500">Resolution Rate</div>
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="rounded-lg bg-green-100 p-1.5 sm:p-2"><CheckCircle size={18} className="text-green-600" /></div>
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl font-bold text-emerald-600">{safeKpis.resolutionRate}%</div>
+              <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Resolution Rate</div>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-purple-100 p-2"><MapPin size={20} className="text-purple-600" /></div>
-            <div>
-              <div className="text-2xl font-bold text-slate-900">{safeKpis.districtsCovered}/{safeKpis.totalDistricts}</div>
-              <div className="text-xs font-medium text-slate-500">Districts Covered</div>
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="rounded-lg bg-purple-100 p-1.5 sm:p-2"><MapPin size={18} className="text-purple-600" /></div>
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl font-bold text-slate-900">{safeKpis.districtsCovered}/{safeKpis.totalDistricts}</div>
+              <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Districts Covered</div>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-red-100 p-2"><AlertTriangle size={20} className="text-red-600" /></div>
-            <div>
-              <div className="text-2xl font-bold text-red-600">{safeKpis.overdue}</div>
-              <div className="text-xs font-medium text-slate-500">Overdue</div>
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="rounded-lg bg-red-100 p-1.5 sm:p-2"><AlertTriangle size={18} className="text-red-600" /></div>
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl font-bold text-red-600">{safeKpis.overdue}</div>
+              <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Overdue</div>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-amber-100 p-2"><Clock size={20} className="text-amber-600" /></div>
-            <div>
-              <div className="text-2xl font-bold text-amber-600">{safeStatusBreakdown.PENDING}</div>
-              <div className="text-xs font-medium text-slate-500">Pending</div>
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="rounded-lg bg-amber-100 p-1.5 sm:p-2"><Clock size={18} className="text-amber-600" /></div>
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl font-bold text-amber-600">{safeStatusBreakdown.PENDING}</div>
+              <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Pending</div>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-indigo-100 p-2"><Users size={20} className="text-indigo-600" /></div>
-            <div>
-              <div className="text-2xl font-bold text-slate-900">{safeKpis.totalOfficers}</div>
-              <div className="text-xs font-medium text-slate-500">Officers</div>
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="rounded-lg bg-indigo-100 p-1.5 sm:p-2"><Users size={18} className="text-indigo-600" /></div>
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl font-bold text-slate-900">{safeKpis.totalOfficers}</div>
+              <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Officers</div>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-cyan-100 p-2"><Users size={20} className="text-cyan-600" /></div>
-            <div>
-              <div className="text-2xl font-bold text-slate-900">{safeKpis.totalEmployees}</div>
-              <div className="text-xs font-medium text-slate-500">Employees</div>
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="rounded-lg bg-cyan-100 p-1.5 sm:p-2"><Users size={18} className="text-cyan-600" /></div>
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl font-bold text-slate-900">{safeKpis.totalEmployees}</div>
+              <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Employees</div>
             </div>
           </div>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-emerald-100 p-2"><CheckCircle size={20} className="text-emerald-600" /></div>
-            <div>
-              <div className="text-2xl font-bold text-emerald-600">{safeKpis.totalResolved}</div>
-              <div className="text-xs font-medium text-slate-500">Resolved</div>
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="rounded-lg bg-emerald-100 p-1.5 sm:p-2"><CheckCircle size={18} className="text-emerald-600" /></div>
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl font-bold text-emerald-600">{safeKpis.totalResolved}</div>
+              <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Resolved</div>
             </div>
           </div>
         </Card>

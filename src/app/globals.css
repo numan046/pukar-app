@@ -92,6 +92,24 @@ img, video, canvas, svg {
   }
 }
 
+/* Prevent text overflow in tables on mobile */
+@media (max-width: 640px) {
+  table {
+    font-size: 0.8rem;
+  }
+  th, td {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* Smooth scroll for modals on mobile */
+@media (max-width: 640px) {
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 [dir="rtl"] body {
   font-family: var(--font-urdu);
 }

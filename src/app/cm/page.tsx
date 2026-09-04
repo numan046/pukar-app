@@ -31,14 +31,14 @@ const STATUS_COLORS: Record<string, string> = {
 function KpiCard({ icon, label, value, sub, color, onClick }: { icon: React.ReactNode; label: string; value: string | number; sub?: string; color: string; onClick?: () => void }) {
   return (
     <div onClick={onClick} className={onClick ? "cursor-pointer" : ""}>
-      <Card className={`p-4 ${onClick ? "hover:shadow-md transition-shadow" : ""}`}>
+      <Card className={`p-3 sm:p-4 ${onClick ? "hover:shadow-md transition-shadow" : ""}`}>
         <div className="flex items-start justify-between">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
-            <div className="mt-1 text-xl sm:text-2xl font-bold text-slate-900">{value}</div>
-            {sub && <div className="mt-0.5 text-xs text-slate-500">{sub}</div>}
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-slate-500 truncate">{label}</div>
+            <div className="mt-0.5 text-lg sm:text-xl md:text-2xl font-bold text-slate-900">{value}</div>
+            {sub && <div className="mt-0.5 text-[10px] sm:text-xs text-slate-500 truncate">{sub}</div>}
           </div>
-          <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}>{icon}</div>
+          <div className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg shrink-0 ${color}`}>{icon}</div>
         </div>
       </Card>
     </div>
@@ -303,11 +303,11 @@ export default function CmDashboard() {
           <h1 className="text-lg sm:text-xl font-bold text-slate-900">Chief Minister — System Overview</h1>
           <p className="text-sm text-slate-500">Real-time analytics across all departments</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={openComplaintMap} className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button variant="secondary" onClick={openComplaintMap} className="flex items-center justify-center gap-2 w-full sm:w-auto">
             <MapPin size={16} /> Complaint Map
           </Button>
-          <Button onClick={() => setShowBroadcast(true)} className="flex items-center gap-2">
+          <Button onClick={() => setShowBroadcast(true)} className="flex items-center justify-center gap-2 w-full sm:w-auto">
             <Megaphone size={16} /> Send Order to CMOs
           </Button>
         </div>
@@ -617,7 +617,7 @@ export default function CmDashboard() {
                   return allMedia.map((group, gi) => (
                     <div key={gi}>
                       <div className="text-xs font-semibold text-slate-500 mb-2">{group.section}</div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {group.urls.map((url: string, i: number) => {
                           // Detect media type from data URL MIME type or file extension
                           const isDataImage = /^data:image\//i.test(url);
@@ -826,25 +826,25 @@ export default function CmDashboard() {
 
       {/* Complaint List Modal */}
       {showComplaintList && (
-        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/60 p-4" onClick={() => setShowComplaintList(false)}>
-          <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-              <h2 className="text-lg font-bold text-slate-900">{listTitle}</h2>
-              <button onClick={() => setShowComplaintList(false)} className="rounded-lg p-1.5 hover:bg-slate-100">
+        <div className="fixed inset-0 z-[55] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4" onClick={() => setShowComplaintList(false)}>
+          <div className="relative w-full sm:max-w-4xl max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-xl sm:rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 sm:px-5 py-3">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 truncate">{listTitle}</h2>
+              <button onClick={() => setShowComplaintList(false)} className="rounded-lg p-1.5 hover:bg-slate-100 shrink-0">
                 <X size={20} className="text-slate-500" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-5">
               {filteredComplaints.length === 0 ? (
                 <div className="py-8 text-center text-slate-400">No complaints found</div>
               ) : (
                 <div className="space-y-2">
                   {filteredComplaints.map((c: any) => (
                     <div key={c.id} onClick={() => openReceipt(c.id)} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-brand-400 hover:bg-slate-50 cursor-pointer transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs text-slate-500">{c.complaint_code}</span>
-                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      <div className="flex-1 min-w-0 mr-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-[10px] sm:text-xs text-slate-500">{c.complaint_code}</span>
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-medium ${
                             c.status === "RESOLVED" ? "bg-emerald-100 text-emerald-700" :
                             c.status === "PENDING" ? "bg-amber-100 text-amber-700" :
                             c.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
@@ -852,10 +852,10 @@ export default function CmDashboard() {
                             "bg-slate-100 text-slate-700"
                           }`}>{c.status.replace(/_/g, " ")}</span>
                         </div>
-                        <div className="mt-1 text-sm font-medium text-slate-800 truncate">{c.title || c.description?.slice(0, 60) || "No title"}</div>
-                        <div className="mt-0.5 text-xs text-slate-500">{c.category ?? "Uncategorized"} — {c.area ?? "Unknown area"}</div>
+                        <div className="mt-1 text-xs sm:text-sm font-medium text-slate-800 truncate">{c.title || c.description?.slice(0, 60) || "No title"}</div>
+                        <div className="mt-0.5 text-[10px] sm:text-xs text-slate-500 truncate">{c.category ?? "Uncategorized"} — {c.area ?? "Unknown area"}</div>
                       </div>
-                      <div className="text-xs text-slate-400 ml-4">{new Date(c.created_at).toLocaleDateString()}</div>
+                      <div className="text-[10px] sm:text-xs text-slate-400 shrink-0">{new Date(c.created_at).toLocaleDateString()}</div>
                     </div>
                   ))}
                 </div>
@@ -879,18 +879,18 @@ export default function CmDashboard() {
         const updates = receiptComplaint.updates || [];
         const history = receiptComplaint.history || [];
         return (
-          <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/60 p-4" onClick={() => setReceiptComplaint(null)}>
-            <div className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
-              <div className="sticky top-0 bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between rounded-t-xl">
-                <div>
-                  <div className="font-mono text-xs text-slate-400">{c.complaint_code}</div>
-                  <h3 className="text-base font-bold text-slate-900">{c.title || c.category || "Complaint"}</h3>
+          <div className="fixed inset-0 z-[65] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4" onClick={() => setReceiptComplaint(null)}>
+            <div className="relative w-full sm:max-w-lg max-h-[92vh] sm:max-h-[85vh] overflow-y-auto rounded-t-xl sm:rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white border-b border-slate-200 px-4 sm:px-5 py-3 flex items-center justify-between rounded-t-xl">
+                <div className="min-w-0 flex-1 mr-2">
+                  <div className="font-mono text-[10px] sm:text-xs text-slate-400 truncate">{c.complaint_code}</div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">{c.title || c.category || "Complaint"}</h3>
                 </div>
-                <button onClick={() => setReceiptComplaint(null)} className="rounded-lg p-1.5 hover:bg-slate-100">
+                <button onClick={() => setReceiptComplaint(null)} className="rounded-lg p-1.5 hover:bg-slate-100 shrink-0">
                   <X size={18} className="text-slate-500" />
                 </button>
               </div>
-              <div className="px-5 py-4 space-y-4">
+              <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-3 sm:space-y-4">
                 {/* Status flow */}
                 <div>
                   <div className="text-xs font-semibold text-slate-500 mb-2">PROGRESS</div>
@@ -941,7 +941,7 @@ export default function CmDashboard() {
                   return allMedia.map((group, gi) => (
                     <div key={gi}>
                       <div className="text-xs font-semibold text-slate-500 mb-2">{group.section}</div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {group.urls.map((url: string, i: number) => {
                           const isDataImage = /^data:image\//i.test(url);
                           const isDataVideo = /^data:video\//i.test(url);

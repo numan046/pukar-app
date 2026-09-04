@@ -151,8 +151,8 @@ export default function OfficerDashboard() {
           </p>
         </div>
         {user.districtId && (
-          <Button onClick={() => setShowBroadcast(true)} className="flex items-center gap-2 whitespace-nowrap">
-            <Megaphone size={16} /> <span className="hidden sm:inline">Announce</span><span className="sm:hidden">Announce</span>
+          <Button onClick={() => setShowBroadcast(true)} className="flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto">
+            <Megaphone size={16} /> Announce
           </Button>
         )}
       </div>
@@ -201,68 +201,68 @@ export default function OfficerDashboard() {
       )}
 
       {/* KPI Cards */}
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="mt-6 grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openComplaintList("TOTAL", "All Complaints")}>
-          <Card className="p-4">
+          <Card className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <FolderKanban size={20} className="text-indigo-600" />
-              <div>
-                <div className="text-2xl font-bold text-slate-900">{stats.standaloneComplaints}</div>
-                <div className="text-xs font-medium text-slate-500">Total Complaints</div>
+              <FolderKanban size={18} className="text-indigo-600 shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-slate-900">{stats.standaloneComplaints}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Total Complaints</div>
               </div>
             </div>
           </Card>
         </div>
         <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openComplaintList("PENDING", "Pending Complaints")}>
-          <Card className="p-4">
+          <Card className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <AlertTriangle size={20} className="text-amber-600" />
-              <div>
-                <div className="text-2xl font-bold text-amber-600">{standaloneComplaints.filter(c => c.status === "PENDING" || c.status === "ASSIGNED").length}</div>
-                <div className="text-xs font-medium text-slate-500">Pending</div>
+              <AlertTriangle size={18} className="text-amber-600 shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-amber-600">{standaloneComplaints.filter(c => c.status === "PENDING" || c.status === "ASSIGNED").length}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Pending</div>
               </div>
             </div>
           </Card>
         </div>
         <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openComplaintList("IN_PROGRESS", "In Progress Complaints")}>
-          <Card className="p-4">
+          <Card className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <Clock size={20} className="text-blue-600" />
-              <div>
-                <div className="text-2xl font-bold text-blue-600">{standaloneComplaints.filter(c => c.status === "IN_PROGRESS").length}</div>
-                <div className="text-xs font-medium text-slate-500">In Progress</div>
+              <Clock size={18} className="text-blue-600 shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-blue-600">{standaloneComplaints.filter(c => c.status === "IN_PROGRESS").length}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">In Progress</div>
               </div>
             </div>
           </Card>
         </div>
         <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openComplaintList("RESOLVED", "Resolved Complaints")}>
-          <Card className="p-4">
+          <Card className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <CheckCircle2 size={20} className="text-emerald-600" />
-              <div>
-                <div className="text-2xl font-bold text-emerald-600">{standaloneComplaints.filter(c => c.status === "RESOLVED" || c.status === "MARKED_RESOLVED").length}</div>
-                <div className="text-xs font-medium text-slate-500">Resolved</div>
+              <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-emerald-600">{standaloneComplaints.filter(c => c.status === "RESOLVED" || c.status === "MARKED_RESOLVED").length}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Resolved</div>
               </div>
             </div>
           </Card>
         </div>
         <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openComplaintList("OVERDUE", "Overdue Complaints")}>
-          <Card className="p-4">
+          <Card className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
-              <AlertTriangle size={20} className="text-red-600" />
-              <div>
-                <div className="text-2xl font-bold text-red-600">{standaloneComplaints.filter(c => c.deadline && c.deadline < new Date().toISOString() && c.status !== "RESOLVED").length}</div>
-                <div className="text-xs font-medium text-slate-500">Overdue</div>
+              <AlertTriangle size={18} className="text-red-600 shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-red-600">{standaloneComplaints.filter(c => c.deadline && c.deadline < new Date().toISOString() && c.status !== "RESOLVED").length}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Overdue</div>
               </div>
             </div>
           </Card>
         </div>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <div className="flex items-center gap-2">
-            <Users size={20} className="text-cyan-600" />
-            <div>
-              <div className="text-2xl font-bold text-slate-700">{stats.employees}</div>
-              <div className="text-xs font-medium text-slate-500">Employees</div>
+            <Users size={18} className="text-cyan-600 shrink-0" />
+            <div className="min-w-0">
+              <div className="text-xl sm:text-2xl font-bold text-slate-700">{stats.employees}</div>
+              <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Employees</div>
             </div>
           </div>
         </Card>
@@ -415,25 +415,25 @@ export default function OfficerDashboard() {
 
       {/* Complaint List Modal */}
       {showComplaintList && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowComplaintList(false)}>
-          <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-              <h2 className="text-lg font-bold text-slate-900">{listTitle}</h2>
-              <button onClick={() => setShowComplaintList(false)} className="rounded-lg p-1.5 hover:bg-slate-100">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4" onClick={() => setShowComplaintList(false)}>
+          <div className="relative w-full sm:max-w-4xl max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-xl sm:rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 sm:px-5 py-3">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 truncate">{listTitle}</h2>
+              <button onClick={() => setShowComplaintList(false)} className="rounded-lg p-1.5 hover:bg-slate-100 shrink-0">
                 <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-5">
               {filteredComplaints.length === 0 ? (
                 <div className="py-8 text-center text-slate-400">No complaints found</div>
               ) : (
                 <div className="space-y-2">
                   {filteredComplaints.map((c: any) => (
                     <div key={c.id} onClick={() => openReceipt(c.id)} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-brand-400 hover:bg-slate-50 cursor-pointer transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs text-slate-500">{c.complaint_code}</span>
-                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      <div className="flex-1 min-w-0 mr-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-[10px] sm:text-xs text-slate-500">{c.complaint_code}</span>
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-medium ${
                             c.status === "RESOLVED" ? "bg-emerald-100 text-emerald-700" :
                             c.status === "PENDING" ? "bg-amber-100 text-amber-700" :
                             c.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
@@ -441,10 +441,10 @@ export default function OfficerDashboard() {
                             "bg-slate-100 text-slate-700"
                           }`}>{c.status.replace(/_/g, " ")}</span>
                         </div>
-                        <div className="mt-1 text-sm font-medium text-slate-800 truncate">{c.title || c.description?.slice(0, 60) || "No title"}</div>
-                        <div className="mt-0.5 text-xs text-slate-500">{c.category ?? "Uncategorized"} — {c.area ?? "Unknown area"}</div>
+                        <div className="mt-1 text-xs sm:text-sm font-medium text-slate-800 truncate">{c.title || c.description?.slice(0, 60) || "No title"}</div>
+                        <div className="mt-0.5 text-[10px] sm:text-xs text-slate-500 truncate">{c.category ?? "Uncategorized"} — {c.area ?? "Unknown area"}</div>
                       </div>
-                      <div className="text-xs text-slate-400 ml-4">{new Date(c.created_at).toLocaleDateString()}</div>
+                      <div className="text-[10px] sm:text-xs text-slate-400 shrink-0">{new Date(c.created_at).toLocaleDateString()}</div>
                     </div>
                   ))}
                 </div>
@@ -468,18 +468,18 @@ export default function OfficerDashboard() {
         const updates = receiptComplaint.updates || [];
         const history = receiptComplaint.history || [];
         return (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" onClick={() => setReceiptComplaint(null)}>
-            <div className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
-              <div className="sticky top-0 bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between rounded-t-xl">
-                <div>
-                  <div className="font-mono text-xs text-slate-400">{c.complaint_code}</div>
-                  <h3 className="text-base font-bold text-slate-900">{c.title || c.category || "Complaint"}</h3>
+          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4" onClick={() => setReceiptComplaint(null)}>
+            <div className="relative w-full sm:max-w-lg max-h-[92vh] sm:max-h-[85vh] overflow-y-auto rounded-t-xl sm:rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white border-b border-slate-200 px-4 sm:px-5 py-3 flex items-center justify-between rounded-t-xl">
+                <div className="min-w-0 flex-1 mr-2">
+                  <div className="font-mono text-[10px] sm:text-xs text-slate-400 truncate">{c.complaint_code}</div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">{c.title || c.category || "Complaint"}</h3>
                 </div>
-                <button onClick={() => setReceiptComplaint(null)} className="rounded-lg p-1.5 hover:bg-slate-100">
+                <button onClick={() => setReceiptComplaint(null)} className="rounded-lg p-1.5 hover:bg-slate-100 shrink-0">
                   <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
-              <div className="px-5 py-4 space-y-4">
+              <div className="px-4 sm:px-5 py-3 sm:py-4 space-y-3 sm:space-y-4">
                 {/* Status flow */}
                 <div>
                   <div className="text-xs font-semibold text-slate-500 mb-2">PROGRESS</div>
@@ -530,7 +530,7 @@ export default function OfficerDashboard() {
                   return allMedia.map((group, gi) => (
                     <div key={gi}>
                       <div className="text-xs font-semibold text-slate-500 mb-2">{group.section}</div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {group.urls.map((url: string, i: number) => {
                           const isDataImage = /^data:image\//i.test(url);
                           const isDataVideo = /^data:video\//i.test(url);

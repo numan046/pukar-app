@@ -230,8 +230,8 @@ export default function HomePage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4" dir={isUrdu ? "rtl" : "ltr"}>
       <AuroraBg />
-      <div className="relative grid w-full max-w-4xl gap-6 md:grid-cols-2 animate-fade-in-up">
-        <Card className="glass p-8">
+      <div className="relative grid w-full max-w-4xl gap-4 sm:gap-6 md:grid-cols-2 animate-fade-in-up">
+        <Card className="glass p-6 sm:p-8">
           <WordMark />
           <div className="mt-6 flex rounded-xl bg-slate-900/5 p-1 text-sm font-semibold">
             <button
@@ -290,14 +290,14 @@ export default function HomePage() {
           </form>
         </Card>
 
-        <Card className="glass flex flex-col p-6">
+        <Card className="glass flex flex-col p-5 sm:p-6">
           <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
             {isUrdu ? "ڈیمو اکاؤنٹس" : "Demo Accounts"}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
             {isUrdu ? "ایک کلک سے داخل ہوں۔ پاسورڈ: Demo@1234" : "One-click sign-in. Password: Demo@1234"}
           </p>
-          <div className="mt-3 flex flex-1 flex-col gap-1.5 overflow-auto">
+          <div className="mt-3 flex flex-1 flex-col gap-1.5 overflow-auto max-h-[50vh] sm:max-h-none">
             {DEMO_ACCOUNTS.map((acc) => (
               <button
                 key={acc.email}
