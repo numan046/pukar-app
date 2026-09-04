@@ -96,12 +96,12 @@ function PieChart({ data }: { data: { name: string; value: number; color: string
 function BarChart({ data, maxVal }: { data: { label: string; value: number; color: string }[]; maxVal: number }) {
   if (data.length === 0) return <div className="py-4 text-center text-sm text-slate-400">No data</div>;
   return (
-    <div className="flex items-end gap-2" style={{ height: 140 }}>
+    <div className="flex items-end gap-1 sm:gap-2" style={{ height: 140 }}>
       {data.map((d, i) => (
-        <div key={i} className="flex flex-1 flex-col items-center gap-1">
+        <div key={i} className="flex flex-1 flex-col items-center gap-1 min-w-0">
           <span className="text-[10px] font-semibold text-slate-700">{d.value}</span>
-          <div className="w-full rounded-t-md transition-all" style={{ height: `${Math.max(4, (d.value / Math.max(maxVal, 1)) * 110)}px`, backgroundColor: d.color, minWidth: 24 }} />
-          <span className="text-[9px] text-slate-500 text-center leading-tight truncate w-full">{d.label}</span>
+          <div className="w-full rounded-t-md transition-all" style={{ height: `${Math.max(4, (d.value / Math.max(maxVal, 1)) * 110)}px`, backgroundColor: d.color, minWidth: 20 }} />
+          <span className="text-[9px] text-slate-500 text-center leading-tight truncate w-full" title={d.label}>{d.label}</span>
         </div>
       ))}
     </div>

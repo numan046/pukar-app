@@ -90,6 +90,20 @@ img, video, canvas, svg {
   box-sizing: border-box;
 }
 
+/* Ensure all containers respect viewport width on mobile */
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+  
+  /* Force all direct children to respect container width */
+  .flex, .grid {
+    min-width: 0;
+  }
+}
+
 /* Better touch targets on mobile */
 @media (max-width: 640px) {
   button, a, [role="button"] {
