@@ -105,7 +105,7 @@ export function GovChrome({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen overflow-x-hidden">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-64 transform bg-gradient-to-b from-ink-900 via-ink-800 to-brand-950 text-white shadow-2xl transition-transform duration-300 ease-out lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 w-56 lg:w-64 transform bg-gradient-to-b from-ink-900 via-ink-800 to-brand-950 text-white shadow-2xl transition-transform duration-300 ease-out lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-16 items-center gap-3 border-b border-white/10 px-4">
           <RadarMark size={28} animated />
           <div>
@@ -149,7 +149,7 @@ export function GovChrome({ children }: { children: React.ReactNode }) {
       {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm transition-opacity lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col lg:ml-64">
+      <div className="flex flex-1 flex-col lg:ml-56 xl:ml-64">
         {/* Header */}
         <header className="glass sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200/60 px-4 shadow-sm">
           <div className="flex items-center gap-3">

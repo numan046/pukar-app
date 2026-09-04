@@ -32,11 +32,11 @@ function KpiCard({ icon, label, value, sub, color, onClick }: { icon: React.Reac
   return (
     <div onClick={onClick} className={onClick ? "cursor-pointer" : ""}>
       <Card className={`p-3 sm:p-4 ${onClick ? "hover:shadow-md transition-shadow" : ""}`}>
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-slate-500 truncate">{label}</div>
+            <div className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
             <div className="mt-0.5 text-lg sm:text-xl md:text-2xl font-bold text-slate-900">{value}</div>
-            {sub && <div className="mt-0.5 text-[10px] sm:text-xs text-slate-500 truncate">{sub}</div>}
+            {sub && <div className="mt-0.5 text-[10px] sm:text-xs text-slate-500">{sub}</div>}
           </div>
           <div className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg shrink-0 ${color}`}>{icon}</div>
         </div>
@@ -49,14 +49,14 @@ function PieChart({ data }: { data: { name: string; value: number; color: string
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) return <div className="py-8 text-center text-sm text-slate-400">No data</div>;
   let cumulative = 0;
-  const size = 160;
-  const r = 60;
+  const size = 140;
+  const r = 52;
   const cx = size / 2;
   const cy = size / 2;
 
   return (
-    <div className="flex items-center gap-4">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
         {data.map((d, i) => {
           const start = cumulative / total;
           cumulative += d.value;
@@ -75,17 +75,17 @@ function PieChart({ data }: { data: { name: string; value: number; color: string
             <path key={i} d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`} fill={d.color} />
           );
         })}
-        <circle cx={cx} cy={cy} r={30} fill="white" />
-        <text x={cx} y={cy - 4} textAnchor="middle" className="text-lg font-bold" fill="#1e293b" fontSize="18">{total}</text>
-        <text x={cx} y={cy + 12} textAnchor="middle" fill="#94a3b8" fontSize="9">TOTAL</text>
+        <circle cx={cx} cy={cy} r={26} fill="white" />
+        <text x={cx} y={cy - 3} textAnchor="middle" className="text-lg font-bold" fill="#1e293b" fontSize="16">{total}</text>
+        <text x={cx} y={cy + 10} textAnchor="middle" fill="#94a3b8" fontSize="8">TOTAL</text>
       </svg>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5 w-full sm:w-auto">
         {data.map((d) => (
           <div key={d.name} className="flex items-center gap-2 text-xs">
-            <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: d.color }} />
-            <span className="text-slate-600">{d.name}</span>
-            <span className="font-semibold text-slate-800">{d.value}</span>
-            <span className="text-slate-400">({Math.round((d.value / total) * 100)}%)</span>
+            <div className="h-3 w-3 rounded-sm shrink-0" style={{ backgroundColor: d.color }} />
+            <span className="text-slate-600 truncate">{d.name}</span>
+            <span className="font-semibold text-slate-800 shrink-0">{d.value}</span>
+            <span className="text-slate-400 shrink-0">({Math.round((d.value / total) * 100)}%)</span>
           </div>
         ))}
       </div>
@@ -336,7 +336,7 @@ export default function CmDashboard() {
       )}
 
       {/* KPI Row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         <KpiCard icon={<BarChart3 size={20} className="text-blue-600" />} label="Total" value={kpis.totalComplaints} color="bg-blue-50" onClick={() => openComplaintList("TOTAL", "All Complaints")} />
         <KpiCard icon={<Clock size={20} className="text-amber-600" />} label="Pending" value={kpis.pending} sub={`${kpis.assigned} assigned`} color="bg-amber-50" onClick={() => openComplaintList("PENDING", "Pending Complaints")} />
         <KpiCard icon={<Activity size={20} className="text-violet-600" />} label="In Progress" value={kpis.inProgress} color="bg-violet-50" onClick={() => openComplaintList("IN_PROGRESS", "In Progress Complaints")} />
@@ -364,7 +364,7 @@ export default function CmDashboard() {
             data={deptStats.map(d => ({ label: d.name.replace(" & ", " &\n"), value: d.total, color: "#6366f1" }))}
             maxVal={maxDept}
           />
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
             {deptStats.map(d => (
               <div key={d.id} className="rounded-lg bg-slate-50 px-3 py-2 text-xs">
                 <div className="font-semibold text-slate-700">{d.name}</div>

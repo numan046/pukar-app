@@ -29,7 +29,7 @@ export default function AdminDashboard() {
       <p className="mt-1 text-sm text-slate-500">Manage departments, users, and system settings</p>
 
       {/* KPI Cards */}
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
         <Card className="p-4">
           <div className="text-2xl font-bold text-slate-900">{departments.length}</div>
           <div className="text-xs font-medium text-slate-500">Departments</div>

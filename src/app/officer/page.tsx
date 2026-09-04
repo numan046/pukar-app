@@ -201,14 +201,14 @@ export default function OfficerDashboard() {
       )}
 
       {/* KPI Cards */}
-      <div className="mt-6 grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openComplaintList("TOTAL", "All Complaints")}>
           <Card className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
               <FolderKanban size={18} className="text-indigo-600 shrink-0" />
               <div className="min-w-0">
                 <div className="text-xl sm:text-2xl font-bold text-slate-900">{stats.standaloneComplaints}</div>
-                <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Total Complaints</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">Total Complaints</div>
               </div>
             </div>
           </Card>
@@ -219,7 +219,7 @@ export default function OfficerDashboard() {
               <AlertTriangle size={18} className="text-amber-600 shrink-0" />
               <div className="min-w-0">
                 <div className="text-xl sm:text-2xl font-bold text-amber-600">{standaloneComplaints.filter(c => c.status === "PENDING" || c.status === "ASSIGNED").length}</div>
-                <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Pending</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">Pending</div>
               </div>
             </div>
           </Card>
@@ -230,7 +230,7 @@ export default function OfficerDashboard() {
               <Clock size={18} className="text-blue-600 shrink-0" />
               <div className="min-w-0">
                 <div className="text-xl sm:text-2xl font-bold text-blue-600">{standaloneComplaints.filter(c => c.status === "IN_PROGRESS").length}</div>
-                <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">In Progress</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">In Progress</div>
               </div>
             </div>
           </Card>
@@ -241,7 +241,7 @@ export default function OfficerDashboard() {
               <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
               <div className="min-w-0">
                 <div className="text-xl sm:text-2xl font-bold text-emerald-600">{standaloneComplaints.filter(c => c.status === "RESOLVED" || c.status === "MARKED_RESOLVED").length}</div>
-                <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Resolved</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">Resolved</div>
               </div>
             </div>
           </Card>
@@ -252,7 +252,7 @@ export default function OfficerDashboard() {
               <AlertTriangle size={18} className="text-red-600 shrink-0" />
               <div className="min-w-0">
                 <div className="text-xl sm:text-2xl font-bold text-red-600">{standaloneComplaints.filter(c => c.deadline && c.deadline < new Date().toISOString() && c.status !== "RESOLVED").length}</div>
-                <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Overdue</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">Overdue</div>
               </div>
             </div>
           </Card>
@@ -262,7 +262,7 @@ export default function OfficerDashboard() {
             <Users size={18} className="text-cyan-600 shrink-0" />
             <div className="min-w-0">
               <div className="text-xl sm:text-2xl font-bold text-slate-700">{stats.employees}</div>
-              <div className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Employees</div>
+              <div className="text-[10px] sm:text-xs font-medium text-slate-500">Employees</div>
             </div>
           </div>
         </Card>
