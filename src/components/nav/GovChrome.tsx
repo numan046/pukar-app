@@ -169,7 +169,7 @@ export function GovChrome({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 animate-fade-in-up p-3 sm:p-4 md:p-6">{children}</main>
+        <main className="flex-1 animate-fade-in-up p-2 sm:p-4 md:p-6">{children}</main>
       </div>
 
       {showChangePw && <ChangePasswordModal onClose={() => setShowChangePw(false)} />}

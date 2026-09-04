@@ -315,7 +315,7 @@ export default function CmDashboard() {
 
       {/* Sent Broadcasts */}
       {sentBroadcasts.length > 0 && (
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <div className="mb-2 flex items-center gap-2">
             <Megaphone size={16} className="text-indigo-600" />
             <div className="text-sm font-semibold text-slate-700">Orders Sent to CMOs</div>
@@ -346,24 +346,28 @@ export default function CmDashboard() {
       </div>
 
       {/* Row 2: Pie + Department bars */}
-      <div className="grid gap-5 md:grid-cols-2">
-        <Card className="p-5">
+      <div className="grid gap-3 sm:gap-5 md:grid-cols-2">
+        <Card className="p-3 sm:p-5">
           <div className="mb-3 flex items-center gap-2">
             <PieIcon size={16} className="text-slate-500" />
             <div className="text-sm font-semibold text-slate-700">Complaint Status Distribution</div>
           </div>
-          <PieChart data={statusDistribution} />
+          <div className="overflow-x-auto">
+            <PieChart data={statusDistribution} />
+          </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="p-3 sm:p-5">
           <div className="mb-3 flex items-center gap-2">
             <Building2 size={16} className="text-slate-500" />
             <div className="text-sm font-semibold text-slate-700">Department-wise Complaints</div>
           </div>
-          <BarChart
-            data={deptStats.map(d => ({ label: d.name.replace(" & ", " &\n"), value: d.total, color: "#6366f1" }))}
-            maxVal={maxDept}
-          />
+          <div className="overflow-x-auto">
+            <BarChart
+              data={deptStats.map(d => ({ label: d.name.replace(" & ", " &\n"), value: d.total, color: "#6366f1" }))}
+              maxVal={maxDept}
+            />
+          </div>
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
             {deptStats.map(d => (
               <div key={d.id} className="rounded-lg bg-slate-50 px-3 py-2 text-xs">
@@ -381,30 +385,34 @@ export default function CmDashboard() {
       </div>
 
       {/* Row 3: Trend + Categories */}
-      <div className="grid gap-5 md:grid-cols-2">
-        <Card className="p-5">
+      <div className="grid gap-3 sm:gap-5 md:grid-cols-2">
+        <Card className="p-3 sm:p-5">
           <div className="mb-3 flex items-center gap-2">
             <TrendingUp size={16} className="text-slate-500" />
             <div className="text-sm font-semibold text-slate-700">14-Day Trend</div>
           </div>
-          <TrendChart data={dailyTrend} />
+          <div className="overflow-x-auto">
+            <TrendChart data={dailyTrend} />
+          </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="p-3 sm:p-5">
           <div className="mb-3 flex items-center gap-2">
             <BarChart3 size={16} className="text-slate-500" />
             <div className="text-sm font-semibold text-slate-700">Category Breakdown</div>
           </div>
-          <BarChart
-            data={categoryDistribution.map(c => ({ label: c.name.length > 16 ? c.name.slice(0, 16) + "…" : c.name, value: c.count, color: "#8b5cf6" }))}
-            maxVal={Math.max(...categoryDistribution.map(c => c.count), 1)}
-          />
+          <div className="overflow-x-auto">
+            <BarChart
+              data={categoryDistribution.map(c => ({ label: c.name.length > 16 ? c.name.slice(0, 16) + "…" : c.name, value: c.count, color: "#8b5cf6" }))}
+              maxVal={Math.max(...categoryDistribution.map(c => c.count), 1)}
+            />
+          </div>
         </Card>
       </div>
 
       {/* Row 4: Employee workload + Verification */}
-      <div className="grid gap-5 md:grid-cols-2">
-        <Card className="p-5">
+      <div className="grid gap-3 sm:gap-5 md:grid-cols-2">
+        <Card className="p-3 sm:p-5">
           <div className="mb-3 flex items-center gap-2">
             <Users size={16} className="text-slate-500" />
             <div className="text-sm font-semibold text-slate-700">Employee Workload</div>
@@ -431,23 +439,23 @@ export default function CmDashboard() {
           )}
         </Card>
 
-        <Card className="p-5">
+        <Card className="p-3 sm:p-5">
           <div className="mb-3 flex items-center gap-2">
             <UserCheck size={16} className="text-slate-500" />
             <div className="text-sm font-semibold text-slate-700">Citizen Verification</div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-lg bg-emerald-50 p-4 text-center">
-              <div className="text-2xl font-bold text-emerald-700">{verification.verifiedYes}</div>
-              <div className="text-xs text-emerald-600">Confirmed Solved</div>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="rounded-lg bg-emerald-50 p-2 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-emerald-700">{verification.verifiedYes}</div>
+              <div className="text-[10px] sm:text-xs text-emerald-600">Confirmed Solved</div>
             </div>
-            <div className="rounded-lg bg-red-50 p-4 text-center">
-              <div className="text-2xl font-bold text-red-700">{verification.verifiedNo}</div>
-              <div className="text-xs text-red-600">Disputed</div>
+            <div className="rounded-lg bg-red-50 p-2 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-red-700">{verification.verifiedNo}</div>
+              <div className="text-[10px] sm:text-xs text-red-600">Disputed</div>
             </div>
-            <div className="rounded-lg bg-amber-50 p-4 text-center">
-              <div className="text-2xl font-bold text-amber-700">{verification.pendingVerification}</div>
-              <div className="text-xs text-amber-600">Awaiting Verify</div>
+            <div className="rounded-lg bg-amber-50 p-2 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-amber-700">{verification.pendingVerification}</div>
+              <div className="text-[10px] sm:text-xs text-amber-600">Awaiting Verify</div>
             </div>
           </div>
           {(verification.verifiedYes + verification.verifiedNo) > 0 && (

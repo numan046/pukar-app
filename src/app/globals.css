@@ -85,6 +85,11 @@ img, video, canvas, svg {
   height: auto;
 }
 
+/* Prevent any horizontal overflow */
+* {
+  box-sizing: border-box;
+}
+
 /* Better touch targets on mobile */
 @media (max-width: 640px) {
   button, a, [role="button"] {
@@ -107,6 +112,13 @@ img, video, canvas, svg {
 @media (max-width: 640px) {
   .overflow-y-auto {
     -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Reduce card padding on mobile */
+@media (max-width: 640px) {
+  .card-mobile-compact {
+    padding: 0.75rem !important;
   }
 }
 
