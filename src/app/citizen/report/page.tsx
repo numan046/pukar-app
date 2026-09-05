@@ -157,7 +157,7 @@ export default function ReportProblemPage() {
     }, 30000);
   }
 
-  function toggleVoice() {
+  async function toggleVoice() {
     // Clear any pending recording timer
     if (recordingTimerRef.current) {
       clearTimeout(recordingTimerRef.current);
@@ -177,7 +177,20 @@ export default function ReportProblemPage() {
       return;
     }
 
-    // Start recognition directly — onerror will handle "not-allowed" if permission is denied
+    // Step 1: Request mic permission explicitly using getUserMedia — this ALWAYS shows the browser prompt
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Permission granted — stop the stream immediately (we just needed the permission)
+      stream.getTracks().forEach(t => t.stop());
+    } catch (err: any) {
+      // User denied mic permission or no mic available
+      console.error("[Voice] Mic permission denied:", err);
+      setShowMicGuide(true);
+      setUploadError("Microphone access is required for voice input. Please allow it and try again.");
+      return;
+    }
+
+    // Step 2: Now that permission is granted, start SpeechRecognition
     startRecognition("ur-PK");
   }
 
