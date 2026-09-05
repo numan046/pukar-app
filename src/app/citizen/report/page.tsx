@@ -24,7 +24,9 @@ export default function ReportProblemPage() {
   const [videoName, setVideoName] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const [audioBlobUrl, setAudioBlobUrl] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<any>(null);
 
   // Step 1 — location
@@ -99,84 +101,83 @@ export default function ReportProblemPage() {
     setAiSuggesting(false);
   }
 
-  function startRecognition(lang: string) {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = lang;
-    recognition.interimResults = false;
-    recognition.continuous = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onresult = (e: any) => {
-      const t = e.results?.[0]?.[0]?.transcript ?? "";
-      if (t) {
-        setUploadError(null);
-        setDescription(p => p ? `${p} ${t}` : t);
-      }
-    };
-
-    recognition.onerror = (e: any) => {
-      console.error("[Voice] Error:", e.error);
-      setRecording(false);
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setUploadError("Microphone access denied. Please allow it in your browser settings, or type your complaint.");
-      } else if (e.error === "no-speech") {
-        setUploadError("No speech detected. Please try again and speak clearly.");
-      } else if (e.error === "network") {
-        setUploadError("Voice recognition needs internet. Please type your complaint instead.");
-      } else if (e.error === "language-not-supported") {
-        setUploadError("Trying English voice recognition…");
-        startRecognition("en-US");
-        return;
-      } else {
-        setUploadError("Voice input failed. Please type your complaint.");
-      }
-    };
-
-    recognition.onend = () => {
-      setRecording(false);
-      if (recordingTimerRef.current) {
-        clearTimeout(recordingTimerRef.current);
-        recordingTimerRef.current = null;
-      }
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setRecording(true);
-    setUploadError(null);
-
-    // Auto-stop after 30 seconds
-    recordingTimerRef.current = setTimeout(() => {
-      try { recognition.stop(); } catch {}
-      setRecording(false);
-    }, 30000);
-  }
-
-  function toggleVoice() {
-    // Clear any pending recording timer
+  async function toggleVoice() {
+    // Clear any pending timer
     if (recordingTimerRef.current) {
       clearTimeout(recordingTimerRef.current);
       recordingTimerRef.current = null;
     }
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setUploadError("Voice input isn't supported in this browser. Please use Chrome or Edge.");
-      return;
-    }
-
     // If already recording, stop it
     if (recording) {
-      try { recognitionRef.current?.stop(); } catch {}
+      try { mediaRecorderRef.current?.stop(); } catch {}
       setRecording(false);
       return;
     }
 
-    // Start SpeechRecognition directly — browser handles permission prompt automatically
-    startRecognition("ur-PK");
+    // Check if MediaRecorder is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setUploadError("Audio recording isn't supported in this browser. Please type your complaint.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
+      let selectedMime = "";
+      for (const mime of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mime)) { selectedMime = mime; break; }
+      }
+
+      const recorder = new MediaRecorder(stream, selectedMime ? { mimeType: selectedMime } : undefined);
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(audioChunksRef.current, { type: selectedMime || "audio/webm" });
+        // Revoke previous blob URL if any
+        if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+        const url = URL.createObjectURL(blob);
+        setAudioBlobUrl(url);
+        setRecording(false);
+        setUploadError(null);
+      };
+
+      recorder.onerror = () => {
+        stream.getTracks().forEach(t => t.stop());
+        setRecording(false);
+        setUploadError("Recording failed. Please type your complaint instead.");
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setRecording(true);
+      setUploadError(null);
+
+      // Auto-stop after 30 seconds
+      recordingTimerRef.current = setTimeout(() => {
+        try { recorder.stop(); } catch {}
+        setRecording(false);
+      }, 30000);
+    } catch (err: any) {
+      console.error("[Voice] Mic error:", err?.name, err?.message);
+      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+        setUploadError("Microphone permission denied. Please enable it in your browser settings.");
+      } else if (err?.name === "NotFoundError") {
+        setUploadError("No microphone found. Please connect a microphone or type your complaint.");
+      } else {
+        setUploadError("Could not access microphone. Please type your complaint.");
+      }
+    }
+  }
+
+  function removeAudio() {
+    if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+    setAudioBlobUrl(null);
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>, kind: "image" | "video") {
@@ -244,14 +245,31 @@ export default function ReportProblemPage() {
         controller.abort();
       }, 30000);
 
+      // Convert audio blob URL to base64 for submission
+      let audioBase64: string | null = null;
+      if (audioBlobUrl) {
+        try {
+          const audioRes = await fetch(audioBlobUrl);
+          const audioBlob = await audioRes.blob();
+          audioBase64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(audioBlob);
+          });
+        } catch (e) {
+          console.error("[Report] Failed to convert audio to base64:", e);
+        }
+      }
+
       const res = await fetch("/api/complaints", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title || undefined,
           description,
           language: /[\u0600-\u06FF]/.test(description) ? "UR" : "EN",
-          hasImage: !!imageUrl, hasVideo: !!videoBase64,
-          mediaUrls: [imageUrl, videoBase64].filter(Boolean),
+          hasImage: !!imageUrl, hasVideo: !!videoBase64, hasAudio: !!audioBase64,
+          mediaUrls: [imageUrl, videoBase64, audioBase64].filter(Boolean),
           latitude: position[0], longitude: position[1],
           address: address || undefined, area: area || undefined,
           confirmedDepartmentId: selectedDeptId,
@@ -302,7 +320,7 @@ export default function ReportProblemPage() {
         <p className="text-sm text-slate-500">Your complaint has been sent to the department. You will be notified when it is assigned and resolved.</p>
         <div className="flex w-full gap-3">
           <Button className="flex-1" onClick={() => router.push("/citizen/complaints")}>View My Complaints</Button>
-          <Button variant="secondary" className="flex-1" onClick={() => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoBase64(null); setVideoName(null); setVideoLoading(false); setStep(0); }}>
+          <Button variant="secondary" className="flex-1" onClick={() => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl); setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoBase64(null); setVideoName(null); setVideoLoading(false); setAudioBlobUrl(null); setStep(0); }}>
             Submit Another
           </Button>
         </div>
@@ -371,7 +389,7 @@ export default function ReportProblemPage() {
                   className="h-full w-full object-cover"
                   controls
                   onLoadedData={() => setVideoLoading(false)}
-                  onError={() => { setVideoLoading(false); setUploadError("Video format not supported. Try MP4, WebM, or MOV."); }}
+                  onError={() => setVideoLoading(false)}
                 />
               </div>
               <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
@@ -381,6 +399,15 @@ export default function ReportProblemPage() {
                   Remove
                 </button>
               </div>
+            </div>
+          )}
+          {audioBlobUrl && (
+            <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+              <audio src={audioBlobUrl} controls className="flex-1 h-8" />
+              <button type="button" onClick={removeAudio} className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Remove
+              </button>
             </div>
           )}
           {uploadError && <div className="text-xs text-red-600">{uploadError}</div>}
