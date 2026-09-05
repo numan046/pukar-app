@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://unpkg.com https://*.tile.openstreetmap.org; font-src 'self' data:; media-src 'self' blob: data:; connect-src 'self' https://*.vercel.app https://*.turso.io https://nominatim.openstreetmap.org https://api-groq.com;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://unpkg.com https://*.tile.openstreetmap.org; font-src 'self' data:; media-src 'self' blob: data:; connect-src 'self' blob: https://*.vercel.app https://*.turso.io https://nominatim.openstreetmap.org https://api-groq.com;"
   );
   response.headers.set("Permissions-Policy", "camera=(self), microphone=(self), geolocation=(self)");
 

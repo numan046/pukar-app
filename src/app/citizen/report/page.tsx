@@ -298,27 +298,53 @@ export default function ReportProblemPage() {
         }
       }
 
+      // Don't send video as base64 - too large for serverless functions
+      // Just send flag and filename
+      const payload = {
+        title: title || undefined,
+        description,
+        language: /[\u0600-\u06FF]/.test(description) ? "UR" : "EN",
+        hasImage: !!imageUrl, hasVideo: !!videoFile, hasAudio: !!audioBase64,
+        videoFileName: videoName || undefined,
+        mediaUrls: [imageUrl, audioBase64].filter(Boolean),
+        latitude: position[0], longitude: position[1],
+        address: address || undefined, area: area || undefined,
+        confirmedDepartmentId: selectedDeptId,
+        categoryId: selectedCategoryId || undefined,
+      };
+
+      console.log("[Report] Payload size:", JSON.stringify(payload).length, "bytes");
+
       const res = await fetch("/api/complaints", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title || undefined,
-          description,
-          language: /[\u0600-\u06FF]/.test(description) ? "UR" : "EN",
-          hasImage: !!imageUrl, hasVideo: !!videoBase64, hasAudio: !!audioBase64,
-          mediaUrls: [imageUrl, videoBase64, audioBase64].filter(Boolean),
-          latitude: position[0], longitude: position[1],
-          address: address || undefined, area: area || undefined,
-          confirmedDepartmentId: selectedDeptId,
-          categoryId: selectedCategoryId || undefined,
-        }),
+        body: JSON.stringify(payload),
         signal: controller.signal,
       });
       clearTimeout(timeout);
       console.log("[Report] Response status:", res.status);
+
+      // Handle non-JSON responses (413, 500, etc.)
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("[Report] Non-JSON response:", text.substring(0, 200));
+        if (res.status === 413) {
+          setSubmitError("File too large. Please remove the video and try again.");
+        } else {
+          setSubmitError("Server error. Please try again.");
+        }
+        setSubmitting(false);
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) {
         console.log("[Report] Error:", data.error);
-        setSubmitError(data.error || "Failed to submit.");
+        if (res.status === 413) {
+          setSubmitError("File too large. Please remove the video and try again.");
+        } else {
+          setSubmitError(data.error || "Failed to submit.");
+        }
         setSubmitting(false);
         return;
       }
