@@ -186,6 +186,13 @@ export default function CmDashboard() {
   // Receipt modal state (for list clicks)
   const [receiptComplaint, setReceiptComplaint] = useState<any>(null);
 
+  // Hierarchy navigation state
+  const [showDeptHierarchy, setShowDeptHierarchy] = useState(false);
+  const [showEmpHierarchy, setShowEmpHierarchy] = useState(false);
+  const [selectedDept, setSelectedDept] = useState<any>(null);
+  const [hierarchyFilter, setHierarchyFilter] = useState<string>("");
+  const [hierarchyTitle, setHierarchyTitle] = useState("");
+
   useEffect(() => {
     fetch("/api/cm/analytics").then(r => r.json()).then(setData).finally(() => setLoading(false));
     // Load CMOs and sent broadcasts
@@ -255,6 +262,20 @@ export default function CmDashboard() {
       setListTitle(title);
       setShowComplaintList(true);
     } catch {}
+  }
+
+  // Open department hierarchy view
+  function openDeptHierarchy(filter: string, title: string) {
+    setHierarchyFilter(filter);
+    setHierarchyTitle(title);
+    setShowDeptHierarchy(true);
+  }
+
+  // Open employee hierarchy for a specific department
+  function openEmpHierarchy(dept: any) {
+    setSelectedDept(dept);
+    setShowEmpHierarchy(true);
+    setShowDeptHierarchy(false);
   }
 
   async function openReceipt(complaintId: string) {
@@ -339,12 +360,12 @@ export default function CmDashboard() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-        <KpiCard icon={<BarChart3 size={20} className="text-blue-600" />} label="Total" value={kpis.totalComplaints} color="bg-blue-50" onClick={() => openComplaintList("TOTAL", "All Complaints")} />
-        <KpiCard icon={<Clock size={20} className="text-amber-600" />} label="Pending" value={kpis.pending} sub={`${kpis.assigned} assigned`} color="bg-amber-50" onClick={() => openComplaintList("PENDING", "Pending Complaints")} />
-        <KpiCard icon={<Activity size={20} className="text-violet-600" />} label="In Progress" value={kpis.inProgress} color="bg-violet-50" onClick={() => openComplaintList("IN_PROGRESS", "In Progress Complaints")} />
-        <KpiCard icon={<CheckCircle2 size={20} className="text-emerald-600" />} label="Resolved" value={kpis.resolved} sub={`${kpis.resolutionRate}% rate`} color="bg-emerald-50" onClick={() => openComplaintList("RESOLVED", "Resolved Complaints")} />
-        <KpiCard icon={<AlertTriangle size={20} className="text-red-600" />} label="Overdue" value={kpis.overdueCount} color="bg-red-50" onClick={() => openComplaintList("OVERDUE", "Overdue Complaints")} />
-        <KpiCard icon={<Users size={20} className="text-cyan-600" />} label="Employees" value={kpis.totalEmployees} sub={`${kpis.totalOfficers} officers`} color="bg-cyan-50" />
+        <KpiCard icon={<BarChart3 size={20} className="text-blue-600" />} label="Total" value={kpis.totalComplaints} color="bg-blue-50" onClick={() => openDeptHierarchy("TOTAL", "All Complaints")} />
+        <KpiCard icon={<Clock size={20} className="text-amber-600" />} label="Pending" value={kpis.pending} sub={`${kpis.assigned} assigned`} color="bg-amber-50" onClick={() => openDeptHierarchy("PENDING", "Pending Complaints")} />
+        <KpiCard icon={<Activity size={20} className="text-violet-600" />} label="In Progress" value={kpis.inProgress} color="bg-violet-50" onClick={() => openDeptHierarchy("IN_PROGRESS", "In Progress Complaints")} />
+        <KpiCard icon={<CheckCircle2 size={20} className="text-emerald-600" />} label="Resolved" value={kpis.resolved} sub={`${kpis.resolutionRate}% rate`} color="bg-emerald-50" onClick={() => openDeptHierarchy("RESOLVED", "Resolved Complaints")} />
+        <KpiCard icon={<AlertTriangle size={20} className="text-red-600" />} label="Overdue" value={kpis.overdueCount} color="bg-red-50" onClick={() => openDeptHierarchy("OVERDUE", "Overdue Complaints")} />
+        <KpiCard icon={<Users size={20} className="text-cyan-600" />} label="Employees" value={kpis.totalEmployees} sub={`${kpis.totalOfficers} officers`} color="bg-cyan-50" onClick={() => openDeptHierarchy("EMPLOYEES", "Employee Overview")} />
       </div>
 
       {/* Row 2: Pie + Department bars */}
@@ -744,6 +765,176 @@ export default function CmDashboard() {
           </div>
         );
       })()}
+
+      {/* Department Hierarchy Modal */}
+      {showDeptHierarchy && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-2 sm:p-4" onClick={() => setShowDeptHierarchy(false)}>
+          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header with Breadcrumb */}
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4">
+              <div>
+                <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                  <span>Dashboard</span>
+                  <span>›</span>
+                  <span className="font-medium text-slate-700">{hierarchyTitle}</span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900">Department Breakdown</h2>
+              </div>
+              <button onClick={() => setShowDeptHierarchy(false)} className="rounded-lg p-2 hover:bg-slate-100 transition">
+                <X size={20} className="text-slate-500" />
+              </button>
+            </div>
+
+            {/* Department List */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {hierarchyFilter === "EMPLOYEES" ? (
+                // Employee Overview - Show all employees grouped by department
+                <div className="space-y-4">
+                  {deptStats.map((dept: any) => (
+                    <div key={dept.id} className="rounded-lg border border-slate-200 p-4 hover:shadow-md transition">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-slate-900">{dept.name}</h3>
+                          <p className="text-xs text-slate-500">{dept.officerName || "No officer assigned"}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-slate-900">{dept.employees}</div>
+                          <div className="text-xs text-slate-500">employees</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2 text-center">
+                        <div className="rounded bg-amber-50 p-2">
+                          <div className="text-lg font-bold text-amber-700">{dept.pending}</div>
+                          <div className="text-[10px] text-amber-600">Pending</div>
+                        </div>
+                        <div className="rounded bg-violet-50 p-2">
+                          <div className="text-lg font-bold text-violet-700">{dept.inProgress}</div>
+                          <div className="text-[10px] text-violet-600">Active</div>
+                        </div>
+                        <div className="rounded bg-emerald-50 p-2">
+                          <div className="text-lg font-bold text-emerald-700">{dept.resolved}</div>
+                          <div className="text-[10px] text-emerald-600">Resolved</div>
+                        </div>
+                        <div className="rounded bg-red-50 p-2">
+                          <div className="text-lg font-bold text-red-700">{dept.overdue}</div>
+                          <div className="text-[10px] text-red-600">Overdue</div>
+                        </div>
+                      </div>
+                      <button onClick={() => openEmpHierarchy(dept)} className="mt-3 w-full rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition">
+                        View Employees →
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // Complaint filters - Show departments with complaint counts
+                <div className="space-y-3">
+                  {deptStats.map((dept: any) => {
+                    let count = 0;
+                    if (hierarchyFilter === "TOTAL") count = dept.total;
+                    else if (hierarchyFilter === "PENDING") count = dept.pending;
+                    else if (hierarchyFilter === "IN_PROGRESS") count = dept.inProgress;
+                    else if (hierarchyFilter === "RESOLVED") count = dept.resolved;
+                    else if (hierarchyFilter === "OVERDUE") count = dept.overdue;
+
+                    if (count === 0) return null;
+
+                    return (
+                      <div key={dept.id} className="rounded-lg border border-slate-200 p-4 hover:shadow-md transition cursor-pointer" onClick={() => openEmpHierarchy(dept)}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-slate-900">{dept.name}</h3>
+                            <p className="text-xs text-slate-500 mt-1">{dept.officerName || "No officer"}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-3xl font-bold text-slate-900">{count}</div>
+                            <div className="text-xs text-slate-500">complaints</div>
+                          </div>
+                        </div>
+                        {/* Progress bar */}
+                        <div className="mt-3 h-2 rounded-full bg-slate-100 overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-brand-500 to-brand-600 transition-all" style={{ width: `${(count / Math.max(...deptStats.map(d => d.total), 1)) * 100}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Employee Hierarchy Modal */}
+      {showEmpHierarchy && selectedDept && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/60 p-2 sm:p-4" onClick={() => { setShowEmpHierarchy(false); setShowDeptHierarchy(true); }}>
+          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header with Breadcrumb */}
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4">
+              <div>
+                <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                  <button onClick={() => { setShowEmpHierarchy(false); setShowDeptHierarchy(true); }} className="hover:text-brand-600 transition">Dashboard</button>
+                  <span>›</span>
+                  <button onClick={() => { setShowEmpHierarchy(false); setShowDeptHierarchy(true); }} className="hover:text-brand-600 transition">{hierarchyTitle}</button>
+                  <span>›</span>
+                  <span className="font-medium text-slate-700">{selectedDept.name}</span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900">Employees in {selectedDept.name}</h2>
+              </div>
+              <button onClick={() => { setShowEmpHierarchy(false); setShowDeptHierarchy(true); }} className="rounded-lg p-2 hover:bg-slate-100 transition">
+                <X size={20} className="text-slate-500" />
+              </button>
+            </div>
+
+            {/* Employee List */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <div className="space-y-3">
+                {employeeWorkload
+                  .filter((emp: any) => true) // Show all employees (in real app, filter by dept)
+                  .map((emp: any, idx: number) => (
+                    <div key={idx} className="rounded-lg border border-slate-200 p-4 hover:shadow-md transition">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white font-semibold">
+                            {emp.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-slate-900">{emp.name}</h3>
+                            <p className="text-xs text-slate-500">{emp.designation || "Employee"}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex gap-3">
+                            <div>
+                              <div className="text-lg font-bold text-slate-900">{emp.active}</div>
+                              <div className="text-[10px] text-slate-500">Active</div>
+                            </div>
+                            <div>
+                              <div className="text-lg font-bold text-emerald-600">{emp.done}</div>
+                              <div className="text-[10px] text-slate-500">Done</div>
+                            </div>
+                            <div>
+                              <div className="text-lg font-bold text-slate-700">{emp.total}</div>
+                              <div className="text-[10px] text-slate-500">Total</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Workload bar */}
+                      <div className="mt-3 h-2 rounded-full bg-slate-100 overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all" style={{ width: `${emp.total > 0 ? (emp.done / emp.total) * 100 : 0}%` }} />
+                      </div>
+                      <div className="mt-2 flex justify-between text-xs text-slate-500">
+                        <span>Workload: {emp.active} active</span>
+                        <span>Completion: {emp.total > 0 ? Math.round((emp.done / emp.total) * 100) : 0}%</span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Media Viewer Modal */}
       {viewerOpen && <MediaViewer urls={viewerUrls} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} />}
