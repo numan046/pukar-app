@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card } from "@/components/ui";
 import MapClient from "@/components/map/MapClient";
-import { Mic, MicOff, Image as ImageIcon, Video, MapPin, CheckCircle2, Loader2, Building2, AlertCircle } from "lucide-react";
+import { Mic, MicOff, Image as ImageIcon, Video, MapPin, CheckCircle2, Loader2, Building2 } from "lucide-react";
 import { PUNJAB_BOUNDARY, PUNJAB_BOUNDS } from "@/lib/punjab-boundary";
 
 type Step = 0 | 1 | 2 | 3;
@@ -19,10 +19,11 @@ export default function ReportProblemPage() {
   const [recording, setRecording] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoBase64, setVideoBase64] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
   const [videoName, setVideoName] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [showMicGuide, setShowMicGuide] = useState(false);
+  const [videoLoading, setVideoLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
   const recordingTimerRef = useRef<any>(null);
 
@@ -112,7 +113,6 @@ export default function ReportProblemPage() {
       const t = e.results?.[0]?.[0]?.transcript ?? "";
       if (t) {
         setUploadError(null);
-        setShowMicGuide(false);
         setDescription(p => p ? `${p} ${t}` : t);
       }
     };
@@ -121,18 +121,17 @@ export default function ReportProblemPage() {
       console.error("[Voice] Error:", e.error);
       setRecording(false);
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setShowMicGuide(true);
-        setUploadError("Microphone access is blocked. Follow the steps below to enable it.");
+        setUploadError("Microphone access denied. Please allow it in your browser settings, or type your complaint.");
       } else if (e.error === "no-speech") {
         setUploadError("No speech detected. Please try again and speak clearly.");
       } else if (e.error === "network") {
-        setUploadError("Network error. Voice recognition needs internet. Try typing instead.");
+        setUploadError("Voice recognition needs internet. Please type your complaint instead.");
       } else if (e.error === "language-not-supported") {
-        setUploadError("Urdu voice not supported, trying English…");
+        setUploadError("Trying English voice recognition…");
         startRecognition("en-US");
         return;
       } else {
-        setUploadError("Voice input failed. Please type your complaint instead.");
+        setUploadError("Voice input failed. Please type your complaint.");
       }
     };
 
@@ -148,7 +147,6 @@ export default function ReportProblemPage() {
     recognition.start();
     setRecording(true);
     setUploadError(null);
-    setShowMicGuide(false);
 
     // Auto-stop after 30 seconds
     recordingTimerRef.current = setTimeout(() => {
@@ -157,7 +155,7 @@ export default function ReportProblemPage() {
     }, 30000);
   }
 
-  async function toggleVoice() {
+  function toggleVoice() {
     // Clear any pending recording timer
     if (recordingTimerRef.current) {
       clearTimeout(recordingTimerRef.current);
@@ -177,25 +175,7 @@ export default function ReportProblemPage() {
       return;
     }
 
-    // Step 1: Request mic permission explicitly using getUserMedia — this ALWAYS shows the browser prompt
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Permission granted — stop the stream immediately (we just needed the permission)
-      stream.getTracks().forEach(t => t.stop());
-    } catch (err: any) {
-      console.error("[Voice] Mic permission error:", err?.name, err?.message);
-      setShowMicGuide(true);
-      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-        setUploadError("Microphone permission was denied. Please enable it using the steps below.");
-      } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
-        setUploadError("No microphone found on this device. Please connect a microphone or type your complaint.");
-      } else {
-        setUploadError("Could not access microphone. Please check your device settings and try again.");
-      }
-      return;
-    }
-
-    // Step 2: Now that permission is granted, start SpeechRecognition
+    // Start SpeechRecognition directly — browser handles permission prompt automatically
     startRecognition("ur-PK");
   }
 
@@ -204,12 +184,17 @@ export default function ReportProblemPage() {
     setUploadError(null);
 
     if (kind === "video") {
-      // Use blob URL for video — base64 is too large for <video> element to stream
+      // Blob URL for instant preview
       const blobUrl = URL.createObjectURL(file);
       setVideoUrl(blobUrl);
       setVideoName(file.name);
+      setVideoLoading(true);
+      // Also convert to base64 in background for submission
+      const reader = new FileReader();
+      reader.onload = () => setVideoBase64(reader.result as string);
+      reader.onerror = () => setUploadError("Failed to process video. Please try a smaller file.");
+      reader.readAsDataURL(file);
     } else {
-      // Use FileReader for images (smaller, works fine as base64)
       const reader = new FileReader();
       reader.onload = () => {
         setImageUrl(reader.result as string);
@@ -221,7 +206,7 @@ export default function ReportProblemPage() {
   }
 
   function removeImage() { setImageUrl(null); setImageName(null); }
-  function removeVideo() { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); setVideoUrl(null); setVideoName(null); }
+  function removeVideo() { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); setVideoUrl(null); setVideoBase64(null); setVideoName(null); setVideoLoading(false); }
 
   function useCurrentLocation() {
     setLocating(true); setLocationError(null);
@@ -265,8 +250,8 @@ export default function ReportProblemPage() {
           title: title || undefined,
           description,
           language: /[\u0600-\u06FF]/.test(description) ? "UR" : "EN",
-          hasImage: !!imageUrl, hasVideo: !!videoUrl,
-          mediaUrls: [imageUrl, videoUrl].filter(Boolean),
+          hasImage: !!imageUrl, hasVideo: !!videoBase64,
+          mediaUrls: [imageUrl, videoBase64].filter(Boolean),
           latitude: position[0], longitude: position[1],
           address: address || undefined, area: area || undefined,
           confirmedDepartmentId: selectedDeptId,
@@ -317,7 +302,7 @@ export default function ReportProblemPage() {
         <p className="text-sm text-slate-500">Your complaint has been sent to the department. You will be notified when it is assigned and resolved.</p>
         <div className="flex w-full gap-3">
           <Button className="flex-1" onClick={() => router.push("/citizen/complaints")}>View My Complaints</Button>
-          <Button variant="secondary" className="flex-1" onClick={() => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoName(null); setStep(0); }}>
+          <Button variant="secondary" className="flex-1" onClick={() => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoBase64(null); setVideoName(null); setVideoLoading(false); setStep(0); }}>
             Submit Another
           </Button>
         </div>
@@ -375,7 +360,20 @@ export default function ReportProblemPage() {
           )}
           {videoUrl && (
             <div className="flex flex-col gap-1.5">
-              <video src={videoUrl} className="h-40 w-full rounded-lg object-cover" controls />
+              <div className="relative h-40 w-full rounded-lg bg-slate-900 overflow-hidden">
+                {videoLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 size={24} className="animate-spin text-white" />
+                  </div>
+                )}
+                <video
+                  src={videoUrl}
+                  className="h-full w-full object-cover"
+                  controls
+                  onLoadedData={() => setVideoLoading(false)}
+                  onError={() => { setVideoLoading(false); setUploadError("Video format not supported. Try MP4, WebM, or MOV."); }}
+                />
+              </div>
               <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
                 <span className="truncate text-xs text-slate-600 max-w-[80%]">{videoName}</span>
                 <button type="button" onClick={removeVideo} className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700">
@@ -385,36 +383,7 @@ export default function ReportProblemPage() {
               </div>
             </div>
           )}
-          {uploadError && !showMicGuide && <div className="text-xs text-red-600">{uploadError}</div>}
-          {showMicGuide && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <div className="flex items-start gap-2">
-                <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
-                <div className="flex flex-col gap-2 text-xs text-amber-800">
-                  <p className="font-semibold">Microphone permission is blocked. To enable:</p>
-                  <ol className="flex flex-col gap-1.5 pl-0 list-none">
-                    <li className="flex items-start gap-2">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">1</span>
-                      <span>Click the <strong>lock icon</strong> (or settings icon) in the address bar</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">2</span>
-                      <span>Find <strong>Microphone</strong> in the permissions list</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">3</span>
-                      <span>Change it to <strong>Allow</strong></span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">4</span>
-                      <span><strong>Refresh the page</strong> and try again</span>
-                    </li>
-                  </ol>
-                  <p className="text-[11px] text-amber-600">Or go to: <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[10px]">chrome://settings/content/microphone</code></p>
-                </div>
-              </div>
-            </div>
-          )}
+          {uploadError && <div className="text-xs text-red-600">{uploadError}</div>}
           {aiSuggesting && <div className="flex items-center gap-2 text-xs text-brand-600"><Loader2 size={14} className="animate-spin" /> AI is suggesting a department…</div>}
           {aiSuggestion && !aiSuggesting && (
             <div className="rounded-lg bg-brand-50 p-3 text-sm text-brand-800">
