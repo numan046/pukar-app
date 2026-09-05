@@ -45,7 +45,16 @@ export default function CitizenComplaintDetail() {
 
   if (loading || !complaint) return <div className="p-10 text-center text-slate-400">Loading complaint…</div>;
 
-  const media = JSON.parse(complaint.media_urls || "[]") as string[];
+  let media: string[] = [];
+  try {
+    const raw = complaint.media_urls || "[]";
+    media = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (!Array.isArray(media)) media = [];
+    console.log("[Complaint Detail] Media URLs:", media);
+  } catch (e) {
+    console.error("[Complaint Detail] Failed to parse media_urls:", e);
+    media = [];
+  }
   const STATUS_FLOW = ["PENDING", "ASSIGNED", "IN_PROGRESS", "MARKED_RESOLVED", "RESOLVED"];
   const reachedIdx = STATUS_FLOW.indexOf(complaint.status);
   const isReview = complaint.status === "OFFICER_REVIEW";
