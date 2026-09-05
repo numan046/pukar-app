@@ -89,8 +89,16 @@ export function SectionTitle({ children, action }: { children: ReactNode; action
 
 // Detect media type and render appropriate element
 export function MediaItem({ url, className }: { url: string; className?: string }) {
-  const isVideo = url.match(/\.(mp4|webm|mov)$/i) || url.startsWith("data:video");
-  const isAudio = url.startsWith("data:audio") || url.match(/\.(mp3|wav|ogg|webm|aac|m4a)$/i);
+  // Check data URL MIME type first (most reliable for base64 data)
+  const isDataVideo = url.startsWith("data:video");
+  const isDataAudio = url.startsWith("data:audio");
+  
+  // Fallback to file extension check for regular URLs
+  const isExtVideo = !isDataVideo && !isDataAudio && url.match(/\.(mp4|mov)$/i);
+  const isExtAudio = !isDataVideo && !isDataAudio && url.match(/\.(mp3|wav|ogg|aac|m4a)$/i);
+  
+  const isVideo = isDataVideo || isExtVideo;
+  const isAudio = isDataAudio || isExtAudio;
 
   if (isAudio) {
     return (

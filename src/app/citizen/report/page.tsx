@@ -298,15 +298,36 @@ export default function ReportProblemPage() {
         }
       }
 
-      // Don't send video as base64 - too large for serverless functions
-      // Just send flag and filename
+      // Upload video separately if it exists and is under 3MB
+      let videoUrl: string | null = null;
+      if (videoFile && videoFile.size <= 3 * 1024 * 1024) {
+        try {
+          const formData = new FormData();
+          formData.append("file", videoFile);
+          const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            videoUrl = uploadData.url;
+          } else {
+            console.warn("[Report] Video upload failed:", uploadRes.status);
+          }
+        } catch (e) {
+          console.error("[Report] Failed to upload video:", e);
+        }
+      } else if (videoFile && videoFile.size > 3 * 1024 * 1024) {
+        console.warn("[Report] Video too large (>3MB), skipping upload");
+        setSubmitError("Video is too large (max 3MB). Please use a smaller video or remove it.");
+        setSubmitting(false);
+        return;
+      }
+
       const payload = {
         title: title || undefined,
         description,
         language: /[\u0600-\u06FF]/.test(description) ? "UR" : "EN",
         hasImage: !!imageUrl, hasVideo: !!videoFile, hasAudio: !!audioBase64,
         videoFileName: videoName || undefined,
-        mediaUrls: [imageUrl, audioBase64].filter(Boolean),
+        mediaUrls: [imageUrl, audioBase64, videoUrl].filter(Boolean),
         latitude: position[0], longitude: position[1],
         address: address || undefined, area: area || undefined,
         confirmedDepartmentId: selectedDeptId,
