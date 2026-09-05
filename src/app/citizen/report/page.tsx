@@ -20,6 +20,7 @@ export default function ReportProblemPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoBase64, setVideoBase64] = useState<string | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
   const [videoName, setVideoName] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -123,60 +124,89 @@ export default function ReportProblemPage() {
       return;
     }
 
+    // Step 1: Get microphone stream
+    let stream: MediaStream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err: any) {
+      console.error("[Voice] getUserMedia error:", err?.name, err?.message);
+      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+        setShowMicReset(true);
+        setUploadError("Microphone access was blocked. Please allow it in your browser settings.");
+      } else if (err?.name === "NotFoundError") {
+        setUploadError("No microphone found. Please connect a microphone or type your complaint.");
+      } else {
+        setUploadError(`Could not access microphone: ${err?.message || "Unknown error"}`);
+      }
+      return;
+    }
+
+    // Step 2: Create MediaRecorder
+    let recorder: MediaRecorder;
+    try {
       const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
       let selectedMime = "";
       for (const mime of mimeTypes) {
         if (MediaRecorder.isTypeSupported(mime)) { selectedMime = mime; break; }
       }
 
-      const recorder = new MediaRecorder(stream, selectedMime ? { mimeType: selectedMime } : undefined);
-      audioChunksRef.current = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-
-      recorder.onstop = () => {
-        stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(audioChunksRef.current, { type: selectedMime || "audio/webm" });
-        // Revoke previous blob URL if any
-        if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
-        const url = URL.createObjectURL(blob);
-        setAudioBlobUrl(url);
-        setRecording(false);
-        setUploadError(null);
-      };
-
-      recorder.onerror = () => {
-        stream.getTracks().forEach(t => t.stop());
-        setRecording(false);
-        setUploadError("Recording failed. Please type your complaint instead.");
-      };
-
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setRecording(true);
-      setUploadError(null);
-      setShowMicReset(false);
-
-      // Auto-stop after 30 seconds
-      recordingTimerRef.current = setTimeout(() => {
-        try { recorder.stop(); } catch {}
-        setRecording(false);
-      }, 30000);
+      recorder = new MediaRecorder(stream, selectedMime ? { mimeType: selectedMime } : undefined);
     } catch (err: any) {
-      console.error("[Voice] Mic error:", err?.name, err?.message);
-      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-        setShowMicReset(true);
-        setUploadError("Microphone was blocked. Reset it using the steps below.");
-      } else if (err?.name === "NotFoundError") {
-        setUploadError("No microphone found. Please connect a microphone or type your complaint.");
-      } else {
-        setUploadError("Could not access microphone. Please type your complaint.");
-      }
+      console.error("[Voice] MediaRecorder creation error:", err?.name, err?.message);
+      stream.getTracks().forEach(t => t.stop());
+      setUploadError(`Failed to initialize recorder: ${err?.message || "Unknown error"}`);
+      return;
     }
+
+    // Step 3: Setup event handlers
+    audioChunksRef.current = [];
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunksRef.current.push(e.data);
+    };
+
+    recorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+      // Revoke previous blob URL if any
+      if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+      const url = URL.createObjectURL(blob);
+      setAudioBlobUrl(url);
+      setRecording(false);
+      setUploadError(null);
+    };
+
+    recorder.onerror = (e) => {
+      console.error("[Voice] MediaRecorder error:", e);
+      stream.getTracks().forEach(t => t.stop());
+      setRecording(false);
+      setUploadError("Recording failed. Please type your complaint instead.");
+    };
+
+    // Step 4: Start recording
+    try {
+      recorder.start();
+    } catch (err: any) {
+      console.error("[Voice] recorder.start() error:", err?.name, err?.message);
+      stream.getTracks().forEach(t => t.stop());
+      if (err?.name === "InvalidStateError") {
+        setUploadError("Recorder is not ready. Please try again.");
+      } else {
+        setUploadError(`Failed to start recording: ${err?.message || "Unknown error"}`);
+      }
+      return;
+    }
+
+    mediaRecorderRef.current = recorder;
+    setRecording(true);
+    setUploadError(null);
+    setShowMicReset(false);
+
+    // Auto-stop after 30 seconds
+    recordingTimerRef.current = setTimeout(() => {
+      try { recorder.stop(); } catch {}
+      setRecording(false);
+    }, 30000);
   }
 
   function removeAudio() {
@@ -189,7 +219,8 @@ export default function ReportProblemPage() {
     setUploadError(null);
 
     if (kind === "video") {
-      // Blob URL for instant preview
+      // Store file object directly for reliable preview
+      setVideoFile(file);
       const blobUrl = URL.createObjectURL(file);
       setVideoUrl(blobUrl);
       setVideoName(file.name);
@@ -206,13 +237,13 @@ export default function ReportProblemPage() {
         setImageUrl(reader.result as string);
         setImageName(file.name);
       };
-      reader.onerror = () => setUploadError("Failed to read image. Please try again.");
+      reader.onerror = () => setUploadError(": Failed to read image. Please try again.");
       reader.readAsDataURL(file);
     }
   }
 
   function removeImage() { setImageUrl(null); setImageName(null); }
-  function removeVideo() { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); setVideoUrl(null); setVideoBase64(null); setVideoName(null); setVideoLoading(false); }
+  function removeVideo() { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); setVideoUrl(null); setVideoBase64(null); setVideoFile(null); setVideoName(null); setVideoLoading(false); }
 
   function useCurrentLocation() {
     setLocating(true); setLocationError(null);
@@ -325,7 +356,7 @@ export default function ReportProblemPage() {
         <p className="text-sm text-slate-500">Your complaint has been sent to the department. You will be notified when it is assigned and resolved.</p>
         <div className="flex w-full gap-3">
           <Button className="flex-1" onClick={() => router.push("/citizen/complaints")}>View My Complaints</Button>
-          <Button variant="secondary" className="flex-1" onClick={() => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl); setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoBase64(null); setVideoName(null); setVideoLoading(false); setVideoKey(0); setAudioBlobUrl(null); setShowMicReset(false); setStep(0); }}>
+          <Button variant="secondary" className="flex-1" onClick={() => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl); setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoBase64(null); setVideoFile(null); setVideoName(null); setVideoLoading(false); setVideoKey(0); setAudioBlobUrl(null); setShowMicReset(false); setStep(0); }}>
             Submit Another
           </Button>
         </div>
