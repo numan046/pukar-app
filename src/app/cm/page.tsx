@@ -186,12 +186,18 @@ export default function CmDashboard() {
   // Receipt modal state (for list clicks)
   const [receiptComplaint, setReceiptComplaint] = useState<any>(null);
 
-  // Hierarchy navigation state
-  const [showDeptHierarchy, setShowDeptHierarchy] = useState(false);
-  const [showEmpHierarchy, setShowEmpHierarchy] = useState(false);
-  const [selectedDept, setSelectedDept] = useState<any>(null);
-  const [hierarchyFilter, setHierarchyFilter] = useState<string>("");
-  const [hierarchyTitle, setHierarchyTitle] = useState("");
+  // Drill-down navigation state
+  const [drillDown, setDrillDown] = useState<{
+    type: "status" | "employees" | null;
+    level: "departments" | "cmos" | "officers" | "employees" | "complaints";
+    statusFilter?: string;
+    deptId?: string;
+    cmoId?: string;
+    officerId?: string;
+    breadcrumb: { label: string; onClick: () => void }[];
+  } | null>(null);
+  const [employeeHierarchy, setEmployeeHierarchy] = useState<any[]>([]);
+  const [drillDownLoading, setDrillDownLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/cm/analytics").then(r => r.json()).then(setData).finally(() => setLoading(false));
@@ -264,20 +270,6 @@ export default function CmDashboard() {
     } catch {}
   }
 
-  // Open department hierarchy view
-  function openDeptHierarchy(filter: string, title: string) {
-    setHierarchyFilter(filter);
-    setHierarchyTitle(title);
-    setShowDeptHierarchy(true);
-  }
-
-  // Open employee hierarchy for a specific department
-  function openEmpHierarchy(dept: any) {
-    setSelectedDept(dept);
-    setShowEmpHierarchy(true);
-    setShowDeptHierarchy(false);
-  }
-
   async function openReceipt(complaintId: string) {
     try {
       const res = await fetch(`/api/complaints/${complaintId}`);
@@ -310,6 +302,112 @@ export default function CmDashboard() {
       fetch("/api/broadcasts").then(r => r.json()).then(d => setSentBroadcasts(d.broadcasts ?? []));
     }
     setBcSending(false);
+  }
+
+  // ===== DRILL-DOWN NAVIGATION FUNCTIONS =====
+
+  // Open status drill-down: show departments with complaint counts for that status
+  function openStatusDrillDown(status: string, title: string) {
+    setDrillDown({
+      type: "status",
+      level: "departments",
+      statusFilter: status,
+      breadcrumb: [{ label: title, onClick: () => closeDrillDown() }],
+    });
+  }
+
+  // Open employees drill-down: show departments
+  async function openEmployeesDrillDown() {
+    setDrillDownLoading(true);
+    try {
+      const res = await fetch("/api/cm/employee-hierarchy");
+      if (res.ok) {
+        const d = await res.json();
+        setEmployeeHierarchy(d.hierarchy ?? []);
+      }
+    } catch {}
+    setDrillDownLoading(false);
+    setDrillDown({
+      type: "employees",
+      level: "departments",
+      breadcrumb: [{ label: "Employees", onClick: () => closeDrillDown() }],
+    });
+  }
+
+  // Navigate to CMOs level for a department
+  function openDepartmentCmos(dept: any) {
+    const prevDrillDown = drillDown;
+    setDrillDown(prev => prev ? {
+      ...prev,
+      level: "cmos",
+      deptId: dept.id,
+      breadcrumb: [
+        ...prev.breadcrumb,
+        { label: dept.name, onClick: () => setDrillDown(prevDrillDown ? { ...prevDrillDown, deptId: undefined } : null) },
+      ],
+    } : null);
+  }
+
+  // Navigate to Officers level for a CMO
+  function openCmoOfficers(cmo: any) {
+    const prevDrillDown = drillDown;
+    setDrillDown(prev => prev ? {
+      ...prev,
+      level: "officers",
+      cmoId: cmo.id,
+      breadcrumb: [
+        ...prev.breadcrumb,
+        { label: cmo.name, onClick: () => setDrillDown(prevDrillDown ? { ...prevDrillDown, cmoId: undefined } : null) },
+      ],
+    } : null);
+  }
+
+  // Navigate to Employees level for an officer
+  function openOfficerEmployees(officer: any) {
+    const prevDrillDown = drillDown;
+    setDrillDown(prev => prev ? {
+      ...prev,
+      level: "employees",
+      officerId: officer.id,
+      breadcrumb: [
+        ...prev.breadcrumb,
+        { label: officer.name, onClick: () => setDrillDown(prevDrillDown ? { ...prevDrillDown, officerId: undefined } : null) },
+      ],
+    } : null);
+  }
+
+  // Show complaints for a department in the selected status
+  async function openDepartmentComplaints(dept: any) {
+    setDrillDownLoading(true);
+    try {
+      const res = await fetch("/api/complaints");
+      if (res.ok) {
+        const d = await res.json();
+        const all = d.complaints ?? [];
+        let filtered = all.filter((c: any) => c.department_id === dept.id);
+
+        // Apply status filter
+        const status = drillDown?.statusFilter;
+        if (status === "PENDING") filtered = filtered.filter((c: any) => c.status === "PENDING" || c.status === "ASSIGNED");
+        else if (status === "IN_PROGRESS") filtered = filtered.filter((c: any) => c.status === "IN_PROGRESS");
+        else if (status === "RESOLVED") filtered = filtered.filter((c: any) => c.status === "RESOLVED" || c.status === "MARKED_RESOLVED");
+        else if (status === "OVERDUE") {
+          const now = new Date().toISOString();
+          filtered = filtered.filter((c: any) => c.deadline && c.deadline < now && c.status !== "RESOLVED");
+        }
+
+        setFilteredComplaints(filtered);
+        setListTitle(`${dept.name} Complaints`);
+        setShowComplaintList(true);
+      }
+    } catch {}
+    setDrillDownLoading(false);
+  }
+
+  // Close drill-down and return to dashboard
+  function closeDrillDown() {
+    setDrillDown(null);
+    setEmployeeHierarchy([]);
   }
 
   if (loading || !data) return <div className="p-10 text-center text-slate-400">Loading analytics…</div>;
@@ -360,13 +458,123 @@ export default function CmDashboard() {
 
       {/* KPI Row */}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-        <KpiCard icon={<BarChart3 size={20} className="text-blue-600" />} label="Total" value={kpis.totalComplaints} color="bg-blue-50" onClick={() => openDeptHierarchy("TOTAL", "All Complaints")} />
-        <KpiCard icon={<Clock size={20} className="text-amber-600" />} label="Pending" value={kpis.pending} sub={`${kpis.assigned} assigned`} color="bg-amber-50" onClick={() => openDeptHierarchy("PENDING", "Pending Complaints")} />
-        <KpiCard icon={<Activity size={20} className="text-violet-600" />} label="In Progress" value={kpis.inProgress} color="bg-violet-50" onClick={() => openDeptHierarchy("IN_PROGRESS", "In Progress Complaints")} />
-        <KpiCard icon={<CheckCircle2 size={20} className="text-emerald-600" />} label="Resolved" value={kpis.resolved} sub={`${kpis.resolutionRate}% rate`} color="bg-emerald-50" onClick={() => openDeptHierarchy("RESOLVED", "Resolved Complaints")} />
-        <KpiCard icon={<AlertTriangle size={20} className="text-red-600" />} label="Overdue" value={kpis.overdueCount} color="bg-red-50" onClick={() => openDeptHierarchy("OVERDUE", "Overdue Complaints")} />
-        <KpiCard icon={<Users size={20} className="text-cyan-600" />} label="Employees" value={kpis.totalEmployees} sub={`${kpis.totalOfficers} officers`} color="bg-cyan-50" onClick={() => openDeptHierarchy("EMPLOYEES", "Employee Overview")} />
+        <KpiCard icon={<BarChart3 size={20} className="text-blue-600" />} label="Total" value={kpis.totalComplaints} color="bg-blue-50" onClick={() => openStatusDrillDown("TOTAL", "All Complaints")} />
+        <KpiCard icon={<Clock size={20} className="text-amber-600" />} label="Pending" value={kpis.pending} sub={`${kpis.assigned} assigned`} color="bg-amber-50" onClick={() => openStatusDrillDown("PENDING", "Pending Complaints")} />
+        <KpiCard icon={<Activity size={20} className="text-violet-600" />} label="In Progress" value={kpis.inProgress} color="bg-violet-50" onClick={() => openStatusDrillDown("IN_PROGRESS", "In Progress Complaints")} />
+        <KpiCard icon={<CheckCircle2 size={20} className="text-emerald-600" />} label="Resolved" value={kpis.resolved} sub={`${kpis.resolutionRate}% rate`} color="bg-emerald-50" onClick={() => openStatusDrillDown("RESOLVED", "Resolved Complaints")} />
+        <KpiCard icon={<AlertTriangle size={20} className="text-red-600" />} label="Overdue" value={kpis.overdueCount} color="bg-red-50" onClick={() => openStatusDrillDown("OVERDUE", "Overdue Complaints")} />
+        <KpiCard icon={<Users size={20} className="text-cyan-600" />} label="Employees" value={kpis.totalEmployees} sub={`${kpis.totalOfficers} officers`} color="bg-cyan-50" onClick={openEmployeesDrillDown} />
       </div>
+
+      {/* Drill-Down Navigation Panel */}
+      {drillDown && (
+        <Card className="p-4 sm:p-5">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            {drillDown.breadcrumb.map((crumb, i) => (
+              <div key={i} className="flex items-center gap-2">
+                {i > 0 && <span className="text-slate-400">/</span>}
+                <button onClick={crumb.onClick} className="text-sm font-medium text-brand-600 hover:text-brand-800 hover:underline">
+                  {crumb.label}
+                </button>
+              </div>
+            ))}
+            <button onClick={closeDrillDown} className="ml-auto text-slate-400 hover:text-slate-600">
+              <X size={18} />
+            </button>
+          </div>
+
+          {drillDownLoading ? (
+            <div className="py-8 text-center text-slate-400">Loading...</div>
+          ) : drillDown.level === "departments" && drillDown.type === "status" ? (
+            /* Status → Departments */
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {deptStats.map((dept) => {
+                const count = drillDown.statusFilter === "TOTAL" ? dept.total
+                  : drillDown.statusFilter === "PENDING" ? dept.pending
+                  : drillDown.statusFilter === "IN_PROGRESS" ? dept.inProgress
+                  : drillDown.statusFilter === "RESOLVED" ? dept.resolved
+                  : drillDown.statusFilter === "OVERDUE" ? dept.overdue
+                  : 0;
+                if (count === 0) return null;
+                return (
+                  <button key={dept.id} onClick={() => openDepartmentComplaints(dept)}
+                    className="flex flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-400 hover:shadow-md transition-all">
+                    <Building2 size={24} className="text-brand-600" />
+                    <span className="text-sm font-semibold text-slate-800 text-center truncate w-full">{dept.name}</span>
+                    <span className="text-lg font-bold text-brand-700">{count}</span>
+                    <span className="text-[10px] text-slate-500">complaints</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : drillDown.level === "departments" && drillDown.type === "employees" ? (
+            /* Employees → Departments */
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {employeeHierarchy.map((dept) => (
+                <button key={dept.id} onClick={() => openDepartmentCmos(dept)}
+                  className="flex flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-400 hover:shadow-md transition-all">
+                  <Building2 size={24} className="text-cyan-600" />
+                  <span className="text-sm font-semibold text-slate-800 text-center truncate w-full">{dept.name}</span>
+                  <span className="text-lg font-bold text-cyan-700">{dept.cmo_count}</span>
+                  <span className="text-[10px] text-slate-500">CMOs</span>
+                </button>
+              ))}
+            </div>
+          ) : drillDown.level === "cmos" ? (
+            /* Department → CMOs */
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {employeeHierarchy.find(d => d.id === drillDown.deptId)?.cmos.map((cmo: any) => (
+                <button key={cmo.id} onClick={() => openCmoOfficers(cmo)}
+                  className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-400 hover:shadow-md transition-all">
+                  <div className="w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center">
+                    <Users size={24} className="text-cyan-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800 text-center">{cmo.name}</span>
+                  <span className="text-xs text-slate-500">{cmo.email}</span>
+                  <span className="text-lg font-bold text-cyan-700">{cmo.officer_count}</span>
+                  <span className="text-[10px] text-slate-500">District Officers</span>
+                </button>
+              ))}
+            </div>
+          ) : drillDown.level === "officers" ? (
+            /* CMO → District Officers */
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {employeeHierarchy.find(d => d.id === drillDown.deptId)?.cmos
+                .find((c: any) => c.id === drillDown.cmoId)?.officers.map((officer: any) => (
+                <button key={officer.id} onClick={() => openOfficerEmployees(officer)}
+                  className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 hover:border-violet-400 hover:shadow-md transition-all">
+                  <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center">
+                    <UserCheck size={24} className="text-violet-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800 text-center">{officer.name}</span>
+                  <span className="text-xs text-slate-500">{officer.designation ?? "Officer"}</span>
+                  <span className="text-xs text-slate-600 font-medium">{officer.district_name}</span>
+                  <span className="text-lg font-bold text-violet-700">{officer.employee_count}</span>
+                  <span className="text-[10px] text-slate-500">Employees</span>
+                </button>
+              ))}
+            </div>
+          ) : drillDown.level === "employees" ? (
+            /* Officer → Employees */
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {employeeHierarchy.find(d => d.id === drillDown.deptId)?.cmos
+                .find((c: any) => c.id === drillDown.cmoId)?.officers
+                .find((o: any) => o.id === drillDown.officerId)?.employees.map((emp: any) => (
+                <div key={emp.id} className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <Users size={24} className="text-emerald-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800 text-center">{emp.name}</span>
+                  <span className="text-xs text-slate-500">{emp.designation ?? "Employee"}</span>
+                  <span className="text-xs text-slate-400">{emp.email}</span>
+                  {emp.phone && <span className="text-xs text-slate-400">{emp.phone}</span>}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </Card>
+      )}
 
       {/* Row 2: Pie + Department bars */}
       <div className="grid gap-3 sm:gap-5 md:grid-cols-2">
@@ -765,176 +973,6 @@ export default function CmDashboard() {
           </div>
         );
       })()}
-
-      {/* Department Hierarchy Modal */}
-      {showDeptHierarchy && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-2 sm:p-4" onClick={() => setShowDeptHierarchy(false)}>
-          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
-            {/* Header with Breadcrumb */}
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4">
-              <div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-                  <span>Dashboard</span>
-                  <span>›</span>
-                  <span className="font-medium text-slate-700">{hierarchyTitle}</span>
-                </div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900">Department Breakdown</h2>
-              </div>
-              <button onClick={() => setShowDeptHierarchy(false)} className="rounded-lg p-2 hover:bg-slate-100 transition">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-
-            {/* Department List */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-              {hierarchyFilter === "EMPLOYEES" ? (
-                // Employee Overview - Show all employees grouped by department
-                <div className="space-y-4">
-                  {deptStats.map((dept: any) => (
-                    <div key={dept.id} className="rounded-lg border border-slate-200 p-4 hover:shadow-md transition">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h3 className="font-semibold text-slate-900">{dept.name}</h3>
-                          <p className="text-xs text-slate-500">{dept.officerName || "No officer assigned"}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-slate-900">{dept.employees}</div>
-                          <div className="text-xs text-slate-500">employees</div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2 text-center">
-                        <div className="rounded bg-amber-50 p-2">
-                          <div className="text-lg font-bold text-amber-700">{dept.pending}</div>
-                          <div className="text-[10px] text-amber-600">Pending</div>
-                        </div>
-                        <div className="rounded bg-violet-50 p-2">
-                          <div className="text-lg font-bold text-violet-700">{dept.inProgress}</div>
-                          <div className="text-[10px] text-violet-600">Active</div>
-                        </div>
-                        <div className="rounded bg-emerald-50 p-2">
-                          <div className="text-lg font-bold text-emerald-700">{dept.resolved}</div>
-                          <div className="text-[10px] text-emerald-600">Resolved</div>
-                        </div>
-                        <div className="rounded bg-red-50 p-2">
-                          <div className="text-lg font-bold text-red-700">{dept.overdue}</div>
-                          <div className="text-[10px] text-red-600">Overdue</div>
-                        </div>
-                      </div>
-                      <button onClick={() => openEmpHierarchy(dept)} className="mt-3 w-full rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition">
-                        View Employees →
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                // Complaint filters - Show departments with complaint counts
-                <div className="space-y-3">
-                  {deptStats.map((dept: any) => {
-                    let count = 0;
-                    if (hierarchyFilter === "TOTAL") count = dept.total;
-                    else if (hierarchyFilter === "PENDING") count = dept.pending;
-                    else if (hierarchyFilter === "IN_PROGRESS") count = dept.inProgress;
-                    else if (hierarchyFilter === "RESOLVED") count = dept.resolved;
-                    else if (hierarchyFilter === "OVERDUE") count = dept.overdue;
-
-                    if (count === 0) return null;
-
-                    return (
-                      <div key={dept.id} className="rounded-lg border border-slate-200 p-4 hover:shadow-md transition cursor-pointer" onClick={() => openEmpHierarchy(dept)}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-slate-900">{dept.name}</h3>
-                            <p className="text-xs text-slate-500 mt-1">{dept.officerName || "No officer"}</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-3xl font-bold text-slate-900">{count}</div>
-                            <div className="text-xs text-slate-500">complaints</div>
-                          </div>
-                        </div>
-                        {/* Progress bar */}
-                        <div className="mt-3 h-2 rounded-full bg-slate-100 overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-brand-500 to-brand-600 transition-all" style={{ width: `${(count / Math.max(...deptStats.map(d => d.total), 1)) * 100}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Employee Hierarchy Modal */}
-      {showEmpHierarchy && selectedDept && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/60 p-2 sm:p-4" onClick={() => { setShowEmpHierarchy(false); setShowDeptHierarchy(true); }}>
-          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
-            {/* Header with Breadcrumb */}
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4">
-              <div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-                  <button onClick={() => { setShowEmpHierarchy(false); setShowDeptHierarchy(true); }} className="hover:text-brand-600 transition">Dashboard</button>
-                  <span>›</span>
-                  <button onClick={() => { setShowEmpHierarchy(false); setShowDeptHierarchy(true); }} className="hover:text-brand-600 transition">{hierarchyTitle}</button>
-                  <span>›</span>
-                  <span className="font-medium text-slate-700">{selectedDept.name}</span>
-                </div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900">Employees in {selectedDept.name}</h2>
-              </div>
-              <button onClick={() => { setShowEmpHierarchy(false); setShowDeptHierarchy(true); }} className="rounded-lg p-2 hover:bg-slate-100 transition">
-                <X size={20} className="text-slate-500" />
-              </button>
-            </div>
-
-            {/* Employee List */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-              <div className="space-y-3">
-                {employeeWorkload
-                  .filter((emp: any) => true) // Show all employees (in real app, filter by dept)
-                  .map((emp: any, idx: number) => (
-                    <div key={idx} className="rounded-lg border border-slate-200 p-4 hover:shadow-md transition">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white font-semibold">
-                            {emp.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-slate-900">{emp.name}</h3>
-                            <p className="text-xs text-slate-500">{emp.designation || "Employee"}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex gap-3">
-                            <div>
-                              <div className="text-lg font-bold text-slate-900">{emp.active}</div>
-                              <div className="text-[10px] text-slate-500">Active</div>
-                            </div>
-                            <div>
-                              <div className="text-lg font-bold text-emerald-600">{emp.done}</div>
-                              <div className="text-[10px] text-slate-500">Done</div>
-                            </div>
-                            <div>
-                              <div className="text-lg font-bold text-slate-700">{emp.total}</div>
-                              <div className="text-[10px] text-slate-500">Total</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {/* Workload bar */}
-                      <div className="mt-3 h-2 rounded-full bg-slate-100 overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all" style={{ width: `${emp.total > 0 ? (emp.done / emp.total) * 100 : 0}%` }} />
-                      </div>
-                      <div className="mt-2 flex justify-between text-xs text-slate-500">
-                        <span>Workload: {emp.active} active</span>
-                        <span>Completion: {emp.total > 0 ? Math.round((emp.done / emp.total) * 100) : 0}%</span>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Media Viewer Modal */}
       {viewerOpen && <MediaViewer urls={viewerUrls} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} />}
