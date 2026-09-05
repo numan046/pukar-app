@@ -159,7 +159,7 @@ export function MediaViewer({ urls, initialIndex, onClose }: { urls: string[]; i
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4" onClick={onClose}>
       <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Close button */}
         <button onClick={onClose} className="absolute top-4 right-4 z-10 text-white hover:text-slate-300 transition">
