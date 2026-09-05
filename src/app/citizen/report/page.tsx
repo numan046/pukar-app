@@ -24,7 +24,9 @@ export default function ReportProblemPage() {
   const [videoName, setVideoName] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [videoKey, setVideoKey] = useState(0);
   const [audioBlobUrl, setAudioBlobUrl] = useState<string | null>(null);
+  const [showMicReset, setShowMicReset] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<any>(null);
@@ -157,6 +159,7 @@ export default function ReportProblemPage() {
       mediaRecorderRef.current = recorder;
       setRecording(true);
       setUploadError(null);
+      setShowMicReset(false);
 
       // Auto-stop after 30 seconds
       recordingTimerRef.current = setTimeout(() => {
@@ -166,7 +169,8 @@ export default function ReportProblemPage() {
     } catch (err: any) {
       console.error("[Voice] Mic error:", err?.name, err?.message);
       if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-        setUploadError("Microphone permission denied. Please enable it in your browser settings.");
+        setShowMicReset(true);
+        setUploadError("Microphone was blocked. Reset it using the steps below.");
       } else if (err?.name === "NotFoundError") {
         setUploadError("No microphone found. Please connect a microphone or type your complaint.");
       } else {
@@ -190,6 +194,7 @@ export default function ReportProblemPage() {
       setVideoUrl(blobUrl);
       setVideoName(file.name);
       setVideoLoading(true);
+      setVideoKey(k => k + 1); // Force video element remount
       // Also convert to base64 in background for submission
       const reader = new FileReader();
       reader.onload = () => setVideoBase64(reader.result as string);
@@ -320,7 +325,7 @@ export default function ReportProblemPage() {
         <p className="text-sm text-slate-500">Your complaint has been sent to the department. You will be notified when it is assigned and resolved.</p>
         <div className="flex w-full gap-3">
           <Button className="flex-1" onClick={() => router.push("/citizen/complaints")}>View My Complaints</Button>
-          <Button variant="secondary" className="flex-1" onClick={() => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl); setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoBase64(null); setVideoName(null); setVideoLoading(false); setAudioBlobUrl(null); setStep(0); }}>
+          <Button variant="secondary" className="flex-1" onClick={() => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl); setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoBase64(null); setVideoName(null); setVideoLoading(false); setVideoKey(0); setAudioBlobUrl(null); setShowMicReset(false); setStep(0); }}>
             Submit Another
           </Button>
         </div>
@@ -385,6 +390,7 @@ export default function ReportProblemPage() {
                   </div>
                 )}
                 <video
+                  key={videoKey}
                   src={videoUrl}
                   className="h-full w-full object-cover"
                   controls
@@ -410,7 +416,19 @@ export default function ReportProblemPage() {
               </button>
             </div>
           )}
-          {uploadError && <div className="text-xs text-red-600">{uploadError}</div>}
+          {uploadError && !showMicReset && <div className="text-xs text-red-600">{uploadError}</div>}
+          {showMicReset && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="text-xs font-semibold text-amber-800 mb-2">Microphone was blocked. To reset:</p>
+              <ol className="flex flex-col gap-1.5 text-xs text-amber-800 list-decimal pl-4">
+                <li>Click the <strong>lock icon</strong> 🔒 in the address bar (left of the URL)</li>
+                <li>Find <strong>Microphone</strong> in the permissions list</li>
+                <li>Change it from "Block" to <strong>"Allow"</strong> (or "Ask")</li>
+                <li><strong>Refresh the page</strong> and try again</li>
+              </ol>
+              <p className="text-[11px] text-amber-600 mt-2">Or visit: <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[10px]">chrome://settings/content/microphone</code></p>
+            </div>
+          )}
           {aiSuggesting && <div className="flex items-center gap-2 text-xs text-brand-600"><Loader2 size={14} className="animate-spin" /> AI is suggesting a department…</div>}
           {aiSuggestion && !aiSuggesting && (
             <div className="rounded-lg bg-brand-50 p-3 text-sm text-brand-800">
