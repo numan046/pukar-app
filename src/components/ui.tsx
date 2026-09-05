@@ -86,3 +86,26 @@ export function SectionTitle({ children, action }: { children: ReactNode; action
     </div>
   );
 }
+
+// Detect media type and render appropriate element
+export function MediaItem({ url, className }: { url: string; className?: string }) {
+  const isVideo = url.match(/\.(mp4|webm|mov)$/i) || url.startsWith("data:video");
+  const isAudio = url.startsWith("data:audio") || url.match(/\.(mp3|wav|ogg|webm|aac|m4a)$/i);
+
+  if (isAudio) {
+    return (
+      <div className={cn("flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2", className)}>
+        <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+        </svg>
+        <audio src={url} controls className="flex-1 h-8 min-w-0" />
+      </div>
+    );
+  }
+
+  if (isVideo) {
+    return <video src={url} controls className={cn("rounded-lg object-cover", className)} />;
+  }
+
+  return <img src={url} alt="Evidence" className={cn("rounded-lg object-cover", className)} />;
+}
