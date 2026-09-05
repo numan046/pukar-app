@@ -183,10 +183,15 @@ export default function ReportProblemPage() {
       // Permission granted — stop the stream immediately (we just needed the permission)
       stream.getTracks().forEach(t => t.stop());
     } catch (err: any) {
-      // User denied mic permission or no mic available
-      console.error("[Voice] Mic permission denied:", err);
+      console.error("[Voice] Mic permission error:", err?.name, err?.message);
       setShowMicGuide(true);
-      setUploadError("Microphone access is required for voice input. Please allow it and try again.");
+      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+        setUploadError("Microphone permission was denied. Please enable it using the steps below.");
+      } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
+        setUploadError("No microphone found on this device. Please connect a microphone or type your complaint.");
+      } else {
+        setUploadError("Could not access microphone. Please check your device settings and try again.");
+      }
       return;
     }
 
@@ -198,19 +203,25 @@ export default function ReportProblemPage() {
     const file = e.target.files?.[0]; if (!file) return;
     setUploadError(null);
 
-    // Convert to base64 client-side — avoids Vercel serverless 4.5MB body limit
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      if (kind === "image") { setImageUrl(dataUrl); setImageName(file.name); }
-      else { setVideoUrl(dataUrl); setVideoName(file.name); }
-    };
-    reader.onerror = () => setUploadError("Failed to read file. Please try again.");
-    reader.readAsDataURL(file);
+    if (kind === "video") {
+      // Use blob URL for video — base64 is too large for <video> element to stream
+      const blobUrl = URL.createObjectURL(file);
+      setVideoUrl(blobUrl);
+      setVideoName(file.name);
+    } else {
+      // Use FileReader for images (smaller, works fine as base64)
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageUrl(reader.result as string);
+        setImageName(file.name);
+      };
+      reader.onerror = () => setUploadError("Failed to read image. Please try again.");
+      reader.readAsDataURL(file);
+    }
   }
 
   function removeImage() { setImageUrl(null); setImageName(null); }
-  function removeVideo() { setVideoUrl(null); setVideoName(null); }
+  function removeVideo() { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); setVideoUrl(null); setVideoName(null); }
 
   function useCurrentLocation() {
     setLocating(true); setLocationError(null);
@@ -306,7 +317,7 @@ export default function ReportProblemPage() {
         <p className="text-sm text-slate-500">Your complaint has been sent to the department. You will be notified when it is assigned and resolved.</p>
         <div className="flex w-full gap-3">
           <Button className="flex-1" onClick={() => router.push("/citizen/complaints")}>View My Complaints</Button>
-          <Button variant="secondary" className="flex-1" onClick={() => { setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoName(null); setStep(0); }}>
+          <Button variant="secondary" className="flex-1" onClick={() => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoName(null); setStep(0); }}>
             Submit Another
           </Button>
         </div>
