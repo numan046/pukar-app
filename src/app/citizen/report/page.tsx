@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card } from "@/components/ui";
 import MapClient from "@/components/map/MapClient";
-import { Mic, MicOff, Image as ImageIcon, Video, MapPin, CheckCircle2, Loader2, Building2 } from "lucide-react";
+import { Mic, MicOff, Image as ImageIcon, Video, MapPin, CheckCircle2, Loader2, Building2, AlertCircle } from "lucide-react";
 import { PUNJAB_BOUNDARY, PUNJAB_BOUNDS } from "@/lib/punjab-boundary";
 
 type Step = 0 | 1 | 2 | 3;
@@ -22,6 +22,7 @@ export default function ReportProblemPage() {
   const [imageName, setImageName] = useState<string | null>(null);
   const [videoName, setVideoName] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showMicGuide, setShowMicGuide] = useState(false);
   const recognitionRef = useRef<any>(null);
   const recordingTimerRef = useRef<any>(null);
 
@@ -97,6 +98,65 @@ export default function ReportProblemPage() {
     setAiSuggesting(false);
   }
 
+  function startRecognition(lang: string) {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = lang;
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (e: any) => {
+      const t = e.results?.[0]?.[0]?.transcript ?? "";
+      if (t) {
+        setUploadError(null);
+        setShowMicGuide(false);
+        setDescription(p => p ? `${p} ${t}` : t);
+      }
+    };
+
+    recognition.onerror = (e: any) => {
+      console.error("[Voice] Error:", e.error);
+      setRecording(false);
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        setShowMicGuide(true);
+        setUploadError("Microphone access is blocked. Follow the steps below to enable it.");
+      } else if (e.error === "no-speech") {
+        setUploadError("No speech detected. Please try again and speak clearly.");
+      } else if (e.error === "network") {
+        setUploadError("Network error. Voice recognition needs internet. Try typing instead.");
+      } else if (e.error === "language-not-supported") {
+        setUploadError("Urdu voice not supported, trying English…");
+        startRecognition("en-US");
+        return;
+      } else {
+        setUploadError("Voice input failed. Please type your complaint instead.");
+      }
+    };
+
+    recognition.onend = () => {
+      setRecording(false);
+      if (recordingTimerRef.current) {
+        clearTimeout(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setRecording(true);
+    setUploadError(null);
+    setShowMicGuide(false);
+
+    // Auto-stop after 30 seconds
+    recordingTimerRef.current = setTimeout(() => {
+      try { recognition.stop(); } catch {}
+      setRecording(false);
+    }, 30000);
+  }
+
   function toggleVoice() {
     // Clear any pending recording timer
     if (recordingTimerRef.current) {
@@ -117,90 +177,23 @@ export default function ReportProblemPage() {
       return;
     }
 
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "ur-PK";
-      recognition.interimResults = false;
-      recognition.continuous = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onresult = (e: any) => {
-        const t = e.results?.[0]?.[0]?.transcript ?? "";
-        if (t) {
-          setUploadError(null);
-          setDescription(p => p ? `${p} ${t}` : t);
-        }
-      };
-
-      recognition.onerror = (e: any) => {
-        console.error("[Voice] Error:", e.error);
-        setRecording(false);
-        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-          setUploadError("Microphone access denied. Please allow microphone permission in browser settings.");
-        } else if (e.error === "no-speech") {
-          setUploadError("No speech detected. Please try again and speak clearly.");
-        } else if (e.error === "network") {
-          setUploadError("Network error. Voice recognition needs internet. Try typing instead.");
-        } else if (e.error === "language-not-supported") {
-          // Fallback: retry with English
-          setUploadError("Urdu voice not supported, trying English…");
-          try {
-            const fallback = new SpeechRecognition();
-            fallback.lang = "en-US";
-            fallback.interimResults = false;
-            fallback.continuous = false;
-            fallback.onresult = (ev: any) => {
-              const txt = ev.results?.[0]?.[0]?.transcript ?? "";
-              if (txt) { setUploadError(null); setDescription(p => p ? `${p} ${txt}` : txt); }
-            };
-            fallback.onerror = () => { setRecording(false); setUploadError("Voice input failed. Please type your complaint."); };
-            fallback.onend = () => setRecording(false);
-            recognitionRef.current = fallback;
-            fallback.start();
-            return; // Don't clear recording state — we're retrying
-          } catch {
-            setUploadError("Voice input isn't working. Please type your complaint.");
-          }
-        } else {
-          setUploadError("Voice input failed. Please type your complaint instead.");
-        }
-      };
-
-      recognition.onend = () => {
-        setRecording(false);
-        if (recordingTimerRef.current) {
-          clearTimeout(recordingTimerRef.current);
-          recordingTimerRef.current = null;
-        }
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-      setRecording(true);
-      setUploadError(null);
-
-      // Auto-stop after 30 seconds
-      recordingTimerRef.current = setTimeout(() => {
-        try { recognition.stop(); } catch {}
-        setRecording(false);
-      }, 30000);
-    } catch (err) {
-      console.error("[Voice] Start failed:", err);
-      setRecording(false);
-      setUploadError("Could not start voice recording. Please type your complaint instead.");
-    }
+    // Start recognition directly — onerror will handle "not-allowed" if permission is denied
+    startRecognition("ur-PK");
   }
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>, kind: "image" | "video") {
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>, kind: "image" | "video") {
     const file = e.target.files?.[0]; if (!file) return;
     setUploadError(null);
-    const formData = new FormData(); formData.append("file", file);
-    try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) { setUploadError(data.error || "Upload failed."); return; }
-      if (kind === "image") { setImageUrl(data.url); setImageName(file.name); } else { setVideoUrl(data.url); setVideoName(file.name); }
-    } catch { setUploadError("Network error while uploading."); }
+
+    // Convert to base64 client-side — avoids Vercel serverless 4.5MB body limit
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      if (kind === "image") { setImageUrl(dataUrl); setImageName(file.name); }
+      else { setVideoUrl(dataUrl); setVideoName(file.name); }
+    };
+    reader.onerror = () => setUploadError("Failed to read file. Please try again.");
+    reader.readAsDataURL(file);
   }
 
   function removeImage() { setImageUrl(null); setImageName(null); }
@@ -368,7 +361,36 @@ export default function ReportProblemPage() {
               </div>
             </div>
           )}
-          {uploadError && <div className="text-xs text-red-600">{uploadError}</div>}
+          {uploadError && !showMicGuide && <div className="text-xs text-red-600">{uploadError}</div>}
+          {showMicGuide && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                <div className="flex flex-col gap-2 text-xs text-amber-800">
+                  <p className="font-semibold">Microphone permission is blocked. To enable:</p>
+                  <ol className="flex flex-col gap-1.5 pl-0 list-none">
+                    <li className="flex items-start gap-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">1</span>
+                      <span>Click the <strong>lock icon</strong> (or settings icon) in the address bar</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">2</span>
+                      <span>Find <strong>Microphone</strong> in the permissions list</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">3</span>
+                      <span>Change it to <strong>Allow</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-800">4</span>
+                      <span><strong>Refresh the page</strong> and try again</span>
+                    </li>
+                  </ol>
+                  <p className="text-[11px] text-amber-600">Or go to: <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[10px]">chrome://settings/content/microphone</code></p>
+                </div>
+              </div>
+            </div>
+          )}
           {aiSuggesting && <div className="flex items-center gap-2 text-xs text-brand-600"><Loader2 size={14} className="animate-spin" /> AI is suggesting a department…</div>}
           {aiSuggestion && !aiSuggesting && (
             <div className="rounded-lg bg-brand-50 p-3 text-sm text-brand-800">
