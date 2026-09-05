@@ -237,24 +237,27 @@ export default function ReportProblemPage() {
       setVideoLoading(true);
       setVideoKey(k => k + 1);
     } else {
-      // Handle multiple image files
-      const newImageUrls: string[] = [];
-      const newImageNames: string[] = [];
-
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          newImageUrls.push(reader.result as string);
-          newImageNames.push(file.name);
-          // Update state when all files are processed
-          if (newImageUrls.length === files.length) {
-            setImageUrls(prev => [...prev, ...newImageUrls]);
-            setImageNames(prev => [...prev, ...newImageNames]);
-          }
-        };
-        reader.onerror = () => setUploadError("Failed to read image. Please try again.");
-        reader.readAsDataURL(file);
+      // Handle multiple image files using Promise.all
+      const imagePromises = Array.from(files).map((file) => {
+        return new Promise<{ url: string; name: string }>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve({ url: reader.result as string, name: file.name });
+          reader.onerror = () => reject(new Error("Failed to read image"));
+          reader.readAsDataURL(file);
+        });
       });
+
+      Promise.all(imagePromises)
+        .then((results) => {
+          const newImageUrls = results.map(r => r.url);
+          const newImageNames = results.map(r => r.name);
+          setImageUrls(prev => [...prev, ...newImageUrls]);
+          setImageNames(prev => [...prev, ...newImageNames]);
+        })
+        .catch((err) => {
+          console.error("[Report] Failed to process images:", err);
+          setUploadError("Failed to process images. Please try again.");
+        });
     }
 
     // Reset input to allow selecting the same file again
