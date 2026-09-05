@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Card, Button } from "@/components/ui";
-import { MapPin, Users, AlertTriangle, CheckCircle, Clock, TrendingUp, Megaphone, Send } from "lucide-react";
+import { MapPin, Users, AlertTriangle, CheckCircle, Clock, TrendingUp, Megaphone, Send, X, UserCheck, Building2 } from "lucide-react";
 
 export default function CmoDashboard() {
   const [analytics, setAnalytics] = useState<any>(null);
@@ -17,14 +17,25 @@ export default function CmoDashboard() {
   const [bcSending, setBcSending] = useState(false);
   const [broadcasts, setBroadcasts] = useState<any[]>([]);
 
+  // Drill-down state
+  const [drillDown, setDrillDown] = useState<{
+    type: "status" | "officers" | "employees";
+    level: "districts" | "complaints" | "list";
+    statusFilter?: string;
+    districtId?: string;
+    breadcrumb: { label: string; onClick: () => void }[];
+  } | null>(null);
+  const [drillComplaints, setDrillComplaints] = useState<any[]>([]);
+  const [drillLoading, setDrillLoading] = useState(false);
+  const [officersList, setOfficersList] = useState<any[]>([]);
+  const [employeesList, setEmployeesList] = useState<any[]>([]);
+
   useEffect(() => {
     fetch("/api/cmo/analytics")
       .then(r => r.ok ? r.json() : Promise.reject(new Error("API error")))
       .then(d => { if (d.kpis) { setAnalytics(d); } setLoading(false); })
       .catch(() => setLoading(false));
-    // Load broadcasts
     fetch("/api/broadcasts").then(r => r.ok ? r.json() : Promise.resolve({ broadcasts: [] })).then(d => setBroadcasts(d.broadcasts ?? [])).catch(() => {});
-    // Fetch all districts for targeting
     fetch("/api/districts").then(r => r.ok ? r.json() : Promise.resolve({ districts: [] })).then(d => setDistricts(Array.isArray(d.districts) ? d.districts : [])).catch(() => {});
   }, []);
 
@@ -41,7 +52,6 @@ export default function CmoDashboard() {
   const safeStatusBreakdown = statusBreakdown || { PENDING: 0, ASSIGNED: 0, IN_PROGRESS: 0, MARKED_RESOLVED: 0, RESOLVED: 0, OFFICER_REVIEW: 0 };
   const safeDistrictStats = districtStats || [];
 
-  // Separate received (from CM) and sent broadcasts
   const receivedFromCm = broadcasts.filter(b => b.sender_role === "CM");
   const sentByMe = broadcasts.filter(b => b.sender_id !== "" && b.sender_role === "CMO");
 
@@ -72,6 +82,98 @@ export default function CmoDashboard() {
       alert("Network error. Please try again.");
     }
     setBcSending(false);
+  }
+
+  // ===== DRILL-DOWN FUNCTIONS =====
+
+  function closeDrillDown() {
+    setDrillDown(null);
+    setDrillComplaints([]);
+    setOfficersList([]);
+    setEmployeesList([]);
+  }
+
+  async function openStatusDrillDown(status: string, title: string) {
+    setDrillDown({
+      type: "status",
+      level: "districts",
+      statusFilter: status,
+      breadcrumb: [{ label: title, onClick: () => closeDrillDown() }],
+    });
+  }
+
+  async function openDistrictComplaints(ds: any) {
+    setDrillLoading(true);
+    const prevDrillDown = drillDown;
+    try {
+      const res = await fetch("/api/complaints");
+      if (res.ok) {
+        const d = await res.json();
+        const all = d.complaints ?? [];
+        let filtered = all.filter((c: any) => c.district_id === ds.district.id);
+        const status = drillDown?.statusFilter;
+        if (status === "PENDING") filtered = filtered.filter((c: any) => c.status === "PENDING" || c.status === "ASSIGNED");
+        else if (status === "IN_PROGRESS") filtered = filtered.filter((c: any) => c.status === "IN_PROGRESS");
+        else if (status === "RESOLVED") filtered = filtered.filter((c: any) => c.status === "RESOLVED" || c.status === "MARKED_RESOLVED");
+        else if (status === "OVERDUE") {
+          const now = new Date().toISOString();
+          filtered = filtered.filter((c: any) => c.deadline && c.deadline < now && c.status !== "RESOLVED");
+        }
+        setDrillComplaints(filtered);
+      }
+    } catch {}
+    setDrillLoading(false);
+    setDrillDown(prev => prev ? {
+      ...prev,
+      level: "complaints",
+      districtId: ds.district.id,
+      breadcrumb: [
+        ...prev.breadcrumb,
+        { label: ds.district.name, onClick: () => setDrillDown(prevDrillDown ? { ...prevDrillDown, districtId: undefined } : null) },
+      ],
+    } : null);
+  }
+
+  async function openOfficersList() {
+    setDrillLoading(true);
+    try {
+      const res = await fetch("/api/employees");
+      if (res.ok) {
+        const d = await res.json();
+        const all = d.employees ?? [];
+        const officers = all.filter((e: any) => e.role === "DEPARTMENT_OFFICER");
+        setOfficersList(officers);
+      }
+    } catch {}
+    setDrillLoading(false);
+    setDrillDown({
+      type: "officers",
+      level: "list",
+      breadcrumb: [{ label: "Officers", onClick: () => closeDrillDown() }],
+    });
+  }
+
+  async function openEmployeesList() {
+    setDrillLoading(true);
+    try {
+      const res = await fetch("/api/employees");
+      if (res.ok) {
+        const d = await res.json();
+        const all = d.employees ?? [];
+        const employees = all.filter((e: any) => e.role === "EMPLOYEE");
+        setEmployeesList(employees);
+      }
+    } catch {}
+    setDrillLoading(false);
+    setDrillDown({
+      type: "employees",
+      level: "list",
+      breadcrumb: [{ label: "Employees", onClick: () => closeDrillDown() }],
+    });
+  }
+
+  function openReceipt(complaintId: string) {
+    window.location.href = `/cmo/complaints/${complaintId}`;
   }
 
   return (
@@ -136,15 +238,17 @@ export default function CmoDashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-        <Card className="p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="rounded-lg bg-blue-100 p-1.5 sm:p-2"><TrendingUp size={18} className="text-blue-600" /></div>
-            <div className="min-w-0">
-              <div className="text-xl sm:text-2xl font-bold text-slate-900">{safeKpis.totalComplaints}</div>
-              <div className="text-[10px] sm:text-xs font-medium text-slate-500">Total Complaints</div>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openStatusDrillDown("TOTAL", "All Complaints")}>
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="rounded-lg bg-blue-100 p-1.5 sm:p-2"><TrendingUp size={18} className="text-blue-600" /></div>
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-slate-900">{safeKpis.totalComplaints}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">Total Complaints</div>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
         <Card className="p-3 sm:p-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="rounded-lg bg-green-100 p-1.5 sm:p-2"><CheckCircle size={18} className="text-green-600" /></div>
@@ -163,52 +267,165 @@ export default function CmoDashboard() {
             </div>
           </div>
         </Card>
-        <Card className="p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="rounded-lg bg-red-100 p-1.5 sm:p-2"><AlertTriangle size={18} className="text-red-600" /></div>
-            <div className="min-w-0">
-              <div className="text-xl sm:text-2xl font-bold text-red-600">{safeKpis.overdue}</div>
-              <div className="text-[10px] sm:text-xs font-medium text-slate-500">Overdue</div>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openStatusDrillDown("OVERDUE", "Overdue Complaints")}>
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="rounded-lg bg-red-100 p-1.5 sm:p-2"><AlertTriangle size={18} className="text-red-600" /></div>
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-red-600">{safeKpis.overdue}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">Overdue</div>
+              </div>
             </div>
-          </div>
-        </Card>
-        <Card className="p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="rounded-lg bg-amber-100 p-1.5 sm:p-2"><Clock size={18} className="text-amber-600" /></div>
-            <div className="min-w-0">
-              <div className="text-xl sm:text-2xl font-bold text-amber-600">{safeStatusBreakdown.PENDING}</div>
-              <div className="text-[10px] sm:text-xs font-medium text-slate-500">Pending</div>
+          </Card>
+        </div>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openStatusDrillDown("PENDING", "Pending Complaints")}>
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="rounded-lg bg-amber-100 p-1.5 sm:p-2"><Clock size={18} className="text-amber-600" /></div>
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-amber-600">{safeStatusBreakdown.PENDING}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">Pending</div>
+              </div>
             </div>
-          </div>
-        </Card>
-        <Card className="p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="rounded-lg bg-indigo-100 p-1.5 sm:p-2"><Users size={18} className="text-indigo-600" /></div>
-            <div className="min-w-0">
-              <div className="text-xl sm:text-2xl font-bold text-slate-900">{safeKpis.totalOfficers}</div>
-              <div className="text-[10px] sm:text-xs font-medium text-slate-500">Officers</div>
+          </Card>
+        </div>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={openOfficersList}>
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="rounded-lg bg-indigo-100 p-1.5 sm:p-2"><Users size={18} className="text-indigo-600" /></div>
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-slate-900">{safeKpis.totalOfficers}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">Officers</div>
+              </div>
             </div>
-          </div>
-        </Card>
-        <Card className="p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="rounded-lg bg-cyan-100 p-1.5 sm:p-2"><Users size={18} className="text-cyan-600" /></div>
-            <div className="min-w-0">
-              <div className="text-xl sm:text-2xl font-bold text-slate-900">{safeKpis.totalEmployees}</div>
-              <div className="text-[10px] sm:text-xs font-medium text-slate-500">Employees</div>
+          </Card>
+        </div>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={openEmployeesList}>
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="rounded-lg bg-cyan-100 p-1.5 sm:p-2"><Users size={18} className="text-cyan-600" /></div>
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-slate-900">{safeKpis.totalEmployees}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">Employees</div>
+              </div>
             </div>
-          </div>
-        </Card>
-        <Card className="p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="rounded-lg bg-emerald-100 p-1.5 sm:p-2"><CheckCircle size={18} className="text-emerald-600" /></div>
-            <div className="min-w-0">
-              <div className="text-xl sm:text-2xl font-bold text-emerald-600">{safeKpis.totalResolved}</div>
-              <div className="text-[10px] sm:text-xs font-medium text-slate-500">Resolved</div>
+          </Card>
+        </div>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openStatusDrillDown("RESOLVED", "Resolved Complaints")}>
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="rounded-lg bg-emerald-100 p-1.5 sm:p-2"><CheckCircle size={18} className="text-emerald-600" /></div>
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-emerald-600">{safeKpis.totalResolved}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">Resolved</div>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
+
+      {/* Drill-Down Panel */}
+      {drillDown && (
+        <Card className="mt-4 p-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            {drillDown.breadcrumb.map((crumb, i) => (
+              <div key={i} className="flex items-center gap-2">
+                {i > 0 && <span className="text-slate-400">/</span>}
+                <button onClick={crumb.onClick} className="text-sm font-medium text-brand-600 hover:text-brand-800 hover:underline">
+                  {crumb.label}
+                </button>
+              </div>
+            ))}
+            <button onClick={closeDrillDown} className="ml-auto text-slate-400 hover:text-slate-600">
+              <X size={18} />
+            </button>
+          </div>
+
+          {drillLoading ? (
+            <div className="py-8 text-center text-slate-400">Loading...</div>
+          ) : drillDown.level === "districts" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {safeDistrictStats.map((ds: any) => {
+                const count = drillDown.statusFilter === "TOTAL" ? ds.totalComplaints
+                  : drillDown.statusFilter === "PENDING" ? ds.pending
+                  : drillDown.statusFilter === "OVERDUE" ? (ds.totalComplaints - ds.resolved - (ds.pending || 0))
+                  : drillDown.statusFilter === "RESOLVED" ? ds.resolved
+                  : 0;
+                if (count <= 0 && drillDown.statusFilter !== "TOTAL") return null;
+                return (
+                  <button key={ds.district.id} onClick={() => openDistrictComplaints(ds)}
+                    className="flex flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-400 hover:shadow-md transition-all">
+                    <MapPin size={24} className="text-brand-600" />
+                    <span className="text-sm font-semibold text-slate-800 text-center truncate w-full">{ds.district.name}</span>
+                    <span className="text-lg font-bold text-brand-700">{count}</span>
+                    <span className="text-[10px] text-slate-500">complaints</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : drillDown.level === "complaints" ? (
+            <div className="space-y-2">
+              {drillComplaints.length === 0 ? (
+                <div className="py-8 text-center text-slate-400">No complaints found</div>
+              ) : (
+                drillComplaints.map((c: any) => (
+                  <div key={c.id} onClick={() => openReceipt(c.id)} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-brand-400 hover:bg-slate-50 cursor-pointer transition-colors">
+                    <div className="flex-1 min-w-0 mr-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-[10px] sm:text-xs text-slate-500">{c.complaint_code}</span>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-medium ${
+                          c.status === "RESOLVED" ? "bg-emerald-100 text-emerald-700" :
+                          c.status === "PENDING" ? "bg-amber-100 text-amber-700" :
+                          c.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
+                          c.status === "OFFICER_REVIEW" ? "bg-red-100 text-red-700" :
+                          "bg-slate-100 text-slate-700"
+                        }`}>{c.status.replace(/_/g, " ")}</span>
+                      </div>
+                      <div className="mt-1 text-xs sm:text-sm font-medium text-slate-800 truncate">{c.title || c.description?.slice(0, 60) || "No title"}</div>
+                      <div className="mt-0.5 text-[10px] sm:text-xs text-slate-500 truncate">{c.category ?? "Uncategorized"} — {c.area ?? "Unknown area"}</div>
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-slate-400 shrink-0">{new Date(c.created_at).toLocaleDateString()}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : drillDown.level === "list" ? (
+            drillDown.type === "officers" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {officersList.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 col-span-full">No officers found</div>
+                ) : officersList.map((o: any) => (
+                  <div key={o.id} className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4">
+                    <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                      <UserCheck size={24} className="text-indigo-600" />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-800 text-center">{o.name}</span>
+                    <span className="text-xs text-slate-500">{o.designation ?? "Officer"}</span>
+                    <span className="text-xs text-slate-400">{o.email}</span>
+                    {o.phone && <span className="text-xs text-slate-400">{o.phone}</span>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {employeesList.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 col-span-full">No employees found</div>
+                ) : employeesList.map((e: any) => (
+                  <div key={e.id} className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4">
+                    <div className="w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center">
+                      <Users size={24} className="text-cyan-600" />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-800 text-center">{e.name}</span>
+                    <span className="text-xs text-slate-500">{e.designation ?? "Employee"}</span>
+                    <span className="text-xs text-slate-400">{e.email}</span>
+                    {e.phone && <span className="text-xs text-slate-400">{e.phone}</span>}
+                  </div>
+                ))}
+              </div>
+            )
+          ) : null}
+        </Card>
+      )}
 
       {/* District Coverage */}
       <div className="mt-8">

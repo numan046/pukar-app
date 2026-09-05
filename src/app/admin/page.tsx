@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui";
+import { Building2, UserCheck, Users, UserCircle } from "lucide-react";
 import type { SessionUser } from "@/types";
 
 export default function AdminDashboard() {
@@ -30,22 +32,58 @@ export default function AdminDashboard() {
 
       {/* KPI Cards */}
       <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
-        <Card className="p-4">
-          <div className="text-2xl font-bold text-slate-900">{departments.length}</div>
-          <div className="text-xs font-medium text-slate-500">Departments</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-2xl font-bold text-blue-600">{stats.officers}</div>
-          <div className="text-xs font-medium text-slate-500">Officers</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-2xl font-bold text-emerald-600">{stats.employees}</div>
-          <div className="text-xs font-medium text-slate-500">Employees</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-2xl font-bold text-purple-600">{stats.citizens}</div>
-          <div className="text-xs font-medium text-slate-500">Citizens</div>
-        </Card>
+        <Link href="/admin/departments">
+          <div className="cursor-pointer hover:shadow-md transition-shadow">
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-100 p-2"><Building2 size={18} className="text-blue-600" /></div>
+                <div>
+                  <div className="text-2xl font-bold text-slate-900">{departments.length}</div>
+                  <div className="text-xs font-medium text-slate-500">Departments</div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </Link>
+        <Link href="/admin/users">
+          <div className="cursor-pointer hover:shadow-md transition-shadow">
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-indigo-100 p-2"><UserCheck size={18} className="text-indigo-600" /></div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-600">{stats.officers}</div>
+                  <div className="text-xs font-medium text-slate-500">Officers</div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </Link>
+        <Link href="/admin/users">
+          <div className="cursor-pointer hover:shadow-md transition-shadow">
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-emerald-100 p-2"><Users size={18} className="text-emerald-600" /></div>
+                <div>
+                  <div className="text-2xl font-bold text-emerald-600">{stats.employees}</div>
+                  <div className="text-xs font-medium text-slate-500">Employees</div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </Link>
+        <Link href="/admin/users">
+          <div className="cursor-pointer hover:shadow-md transition-shadow">
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-purple-100 p-2"><UserCircle size={18} className="text-purple-600" /></div>
+                <div>
+                  <div className="text-2xl font-bold text-purple-600">{stats.citizens}</div>
+                  <div className="text-xs font-medium text-slate-500">Citizens</div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </Link>
       </div>
 
       {/* Departments Table */}

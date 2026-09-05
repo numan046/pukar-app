@@ -1,14 +1,18 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui";
 import { StatusBadge } from "@/components/badges";
-import { ArrowRight, ListChecks, Bell, FileText, PlusCircle } from "lucide-react";
+import { ArrowRight, ListChecks, Bell, FileText, PlusCircle, X } from "lucide-react";
 import type { SessionUser } from "@/types";
 
 export default function CitizenHome() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [complaints, setComplaints] = useState<any[]>([]);
+  const [drillDown, setDrillDown] = useState<{
+    statusFilter: string;
+    title: string;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me").then(r => r.json()).then(d => setUser(d.user));
@@ -20,6 +24,14 @@ export default function CitizenHome() {
   const active = complaints.filter(c => !["RESOLVED"].includes(c.status)).length;
   const resolved = complaints.filter(c => c.status === "RESOLVED").length;
   const needsVerify = complaints.filter(c => c.status === "MARKED_RESOLVED").length;
+
+  const filteredComplaints = useMemo(() => {
+    if (!drillDown) return complaints;
+    if (drillDown.statusFilter === "ACTIVE") return complaints.filter(c => !["RESOLVED"].includes(c.status));
+    if (drillDown.statusFilter === "RESOLVED") return complaints.filter(c => c.status === "RESOLVED");
+    if (drillDown.statusFilter === "VERIFY") return complaints.filter(c => c.status === "MARKED_RESOLVED");
+    return complaints;
+  }, [complaints, drillDown]);
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
@@ -38,13 +50,30 @@ export default function CitizenHome() {
       </Link>
 
       <div className="grid grid-cols-3 gap-2">
-        <Card className="p-2.5 sm:p-4 text-center"><div className="text-lg sm:text-2xl font-bold text-slate-900">{active}</div><div className="text-[10px] sm:text-xs font-medium text-slate-500">Active</div></Card>
-        <Card className="p-2.5 sm:p-4 text-center"><div className="text-lg sm:text-2xl font-bold text-emerald-600">{resolved}</div><div className="text-[10px] sm:text-xs font-medium text-slate-500">Resolved</div></Card>
-        <Card className="p-2.5 sm:p-4 text-center">
-          <div className={`text-lg sm:text-2xl font-bold ${needsVerify > 0 ? "text-orange-600" : "text-slate-400"}`}>{needsVerify}</div>
-          <div className="text-[10px] sm:text-xs font-medium text-slate-500">To Verify</div>
-        </Card>
+        <div className={`cursor-pointer hover:shadow-md transition-shadow ${drillDown?.statusFilter === "ACTIVE" ? "ring-2 ring-brand-500" : ""}`} onClick={() => setDrillDown({ statusFilter: "ACTIVE", title: "Active" })}>
+          <Card className="p-2.5 sm:p-4 text-center"><div className="text-lg sm:text-2xl font-bold text-slate-900">{active}</div><div className="text-[10px] sm:text-xs font-medium text-slate-500">Active</div></Card>
+        </div>
+        <div className={`cursor-pointer hover:shadow-md transition-shadow ${drillDown?.statusFilter === "RESOLVED" ? "ring-2 ring-brand-500" : ""}`} onClick={() => setDrillDown({ statusFilter: "RESOLVED", title: "Resolved" })}>
+          <Card className="p-2.5 sm:p-4 text-center"><div className="text-lg sm:text-2xl font-bold text-emerald-600">{resolved}</div><div className="text-[10px] sm:text-xs font-medium text-slate-500">Resolved</div></Card>
+        </div>
+        <div className={`cursor-pointer hover:shadow-md transition-shadow ${drillDown?.statusFilter === "VERIFY" ? "ring-2 ring-brand-500" : ""}`} onClick={() => setDrillDown({ statusFilter: "VERIFY", title: "To Verify" })}>
+          <Card className="p-2.5 sm:p-4 text-center">
+            <div className={`text-lg sm:text-2xl font-bold ${needsVerify > 0 ? "text-orange-600" : "text-slate-400"}`}>{needsVerify}</div>
+            <div className="text-[10px] sm:text-xs font-medium text-slate-500">To Verify</div>
+          </Card>
+        </div>
       </div>
+
+      {/* Active Filter Badge */}
+      {drillDown && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-slate-500">Showing:</span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">
+            {drillDown.title} ({filteredComplaints.length})
+            <button onClick={() => setDrillDown(null)} className="ml-1 hover:text-brand-900"><X size={12} /></button>
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <Link href="/citizen/complaints">
@@ -64,17 +93,19 @@ export default function CitizenHome() {
       {/* Recent Complaints */}
       <div>
         <div className="flex items-center justify-between">
-          <h2 className="text-sm sm:text-base font-bold text-slate-900">Recent Complaints</h2>
+          <h2 className="text-sm sm:text-base font-bold text-slate-900">
+            {drillDown ? `${drillDown.title} Complaints` : "Recent Complaints"}
+          </h2>
           <Link href="/citizen/complaints" className="text-[10px] sm:text-xs font-semibold text-brand-600 shrink-0">View all</Link>
         </div>
-        {complaints.length === 0 ? (
+        {filteredComplaints.length === 0 ? (
           <div className="mt-3 py-8 text-center text-slate-400">
-            <p>No complaints yet.</p>
+            <p>No complaints found.</p>
             <Link href="/citizen/report" className="mt-1 inline-block text-sm font-medium text-brand-600 hover:underline">Submit your first complaint →</Link>
           </div>
         ) : (
           <div className="mt-3 flex flex-col gap-2">
-            {complaints.slice(0, 5).map((c) => (
+            {filteredComplaints.slice(0, 10).map((c) => (
               <Link key={c.id} href={`/citizen/complaints/${c.id}`}>
                 <Card className="flex items-center justify-between gap-2 sm:gap-3 p-3 sm:p-4 transition hover:border-brand-300">
                   <div className="min-w-0 flex-1">

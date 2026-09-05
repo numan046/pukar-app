@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { Card, Button } from "@/components/ui";
-import { Users, AlertTriangle, Clock, CheckCircle2, FolderKanban, Megaphone, Send } from "lucide-react";
+import { Users, AlertTriangle, Clock, CheckCircle2, FolderKanban, Megaphone, Send, X, UserCheck } from "lucide-react";
 import type { SessionUser, MasterProblemRow } from "@/types";
 
 export default function OfficerDashboard() {
@@ -29,6 +29,15 @@ export default function OfficerDashboard() {
   // Receipt modal state
   const [receiptComplaint, setReceiptComplaint] = useState<any>(null);
   const [mediaViewer, setMediaViewer] = useState<{ url: string; type: string } | null>(null);
+
+  // Drill-down state
+  const [drillDown, setDrillDown] = useState<{
+    type: "status" | "employees";
+    level: "complaints" | "list";
+    statusFilter?: string;
+    breadcrumb: { label: string; onClick: () => void }[];
+  } | null>(null);
+  const [drillLoading, setDrillLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me").then((r) => r.json()).then((d) => {
@@ -135,8 +144,44 @@ export default function OfficerDashboard() {
         const data = await res.json();
         setReceiptComplaint(data);
         setShowComplaintList(false);
+        setDrillDown(null);
       }
     } catch {}
+  }
+
+  // ===== DRILL-DOWN FUNCTIONS =====
+
+  function closeDrillDown() {
+    setDrillDown(null);
+    setFilteredComplaints([]);
+  }
+
+  function openStatusDrillDown(filter: string, title: string) {
+    let filtered: any[] = [];
+    const allComplaints = [...standaloneComplaints];
+    if (filter === "TOTAL") filtered = allComplaints;
+    else if (filter === "PENDING") filtered = allComplaints.filter(c => c.status === "PENDING" || c.status === "ASSIGNED");
+    else if (filter === "IN_PROGRESS") filtered = allComplaints.filter(c => c.status === "IN_PROGRESS");
+    else if (filter === "RESOLVED") filtered = allComplaints.filter(c => c.status === "RESOLVED" || c.status === "MARKED_RESOLVED");
+    else if (filter === "OVERDUE") {
+      const now = new Date().toISOString();
+      filtered = allComplaints.filter(c => c.deadline && c.deadline < now && c.status !== "RESOLVED");
+    }
+    setFilteredComplaints(filtered);
+    setDrillDown({
+      type: "status",
+      level: "complaints",
+      statusFilter: filter,
+      breadcrumb: [{ label: title, onClick: () => closeDrillDown() }],
+    });
+  }
+
+  function openEmployeesDrillDown() {
+    setDrillDown({
+      type: "employees",
+      level: "list",
+      breadcrumb: [{ label: "Employees", onClick: () => closeDrillDown() }],
+    });
   }
 
   return (
@@ -202,7 +247,7 @@ export default function OfficerDashboard() {
 
       {/* KPI Cards */}
       <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
-        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openComplaintList("TOTAL", "All Complaints")}>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openStatusDrillDown("TOTAL", "All Complaints")}>
           <Card className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
               <FolderKanban size={18} className="text-indigo-600 shrink-0" />
@@ -213,7 +258,7 @@ export default function OfficerDashboard() {
             </div>
           </Card>
         </div>
-        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openComplaintList("PENDING", "Pending Complaints")}>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openStatusDrillDown("PENDING", "Pending Complaints")}>
           <Card className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
               <AlertTriangle size={18} className="text-amber-600 shrink-0" />
@@ -224,7 +269,7 @@ export default function OfficerDashboard() {
             </div>
           </Card>
         </div>
-        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openComplaintList("IN_PROGRESS", "In Progress Complaints")}>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openStatusDrillDown("IN_PROGRESS", "In Progress Complaints")}>
           <Card className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
               <Clock size={18} className="text-blue-600 shrink-0" />
@@ -235,7 +280,7 @@ export default function OfficerDashboard() {
             </div>
           </Card>
         </div>
-        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openComplaintList("RESOLVED", "Resolved Complaints")}>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openStatusDrillDown("RESOLVED", "Resolved Complaints")}>
           <Card className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
               <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
@@ -246,7 +291,7 @@ export default function OfficerDashboard() {
             </div>
           </Card>
         </div>
-        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openComplaintList("OVERDUE", "Overdue Complaints")}>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => openStatusDrillDown("OVERDUE", "Overdue Complaints")}>
           <Card className="p-3 sm:p-4">
             <div className="flex items-center gap-2">
               <AlertTriangle size={18} className="text-red-600 shrink-0" />
@@ -257,16 +302,81 @@ export default function OfficerDashboard() {
             </div>
           </Card>
         </div>
-        <Card className="p-3 sm:p-4">
-          <div className="flex items-center gap-2">
-            <Users size={18} className="text-cyan-600 shrink-0" />
-            <div className="min-w-0">
-              <div className="text-xl sm:text-2xl font-bold text-slate-700">{stats.employees}</div>
-              <div className="text-[10px] sm:text-xs font-medium text-slate-500">Employees</div>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={openEmployeesDrillDown}>
+          <Card className="p-3 sm:p-4">
+            <div className="flex items-center gap-2">
+              <Users size={18} className="text-cyan-600 shrink-0" />
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-bold text-slate-700">{stats.employees}</div>
+                <div className="text-[10px] sm:text-xs font-medium text-slate-500">Employees</div>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
+
+      {/* Drill-Down Panel */}
+      {drillDown && (
+        <Card className="mt-4 p-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            {drillDown.breadcrumb.map((crumb, i) => (
+              <div key={i} className="flex items-center gap-2">
+                {i > 0 && <span className="text-slate-400">/</span>}
+                <button onClick={crumb.onClick} className="text-sm font-medium text-brand-600 hover:text-brand-800 hover:underline">
+                  {crumb.label}
+                </button>
+              </div>
+            ))}
+            <button onClick={closeDrillDown} className="ml-auto text-slate-400 hover:text-slate-600">
+              <X size={18} />
+            </button>
+          </div>
+
+          {drillDown.level === "complaints" ? (
+            <div className="space-y-2">
+              {filteredComplaints.length === 0 ? (
+                <div className="py-8 text-center text-slate-400">No complaints found</div>
+              ) : (
+                filteredComplaints.map((c: any) => (
+                  <div key={c.id} onClick={() => openReceipt(c.id)} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-brand-400 hover:bg-slate-50 cursor-pointer transition-colors">
+                    <div className="flex-1 min-w-0 mr-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-[10px] sm:text-xs text-slate-500">{c.complaint_code}</span>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-medium ${
+                          c.status === "RESOLVED" ? "bg-emerald-100 text-emerald-700" :
+                          c.status === "PENDING" ? "bg-amber-100 text-amber-700" :
+                          c.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
+                          c.status === "OFFICER_REVIEW" ? "bg-red-100 text-red-700" :
+                          "bg-slate-100 text-slate-700"
+                        }`}>{c.status.replace(/_/g, " ")}</span>
+                      </div>
+                      <div className="mt-1 text-xs sm:text-sm font-medium text-slate-800 truncate">{c.title || c.description?.slice(0, 60) || "No title"}</div>
+                      <div className="mt-0.5 text-[10px] sm:text-xs text-slate-500 truncate">{c.category ?? "Uncategorized"} — {c.area ?? "Unknown area"}</div>
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-slate-400 shrink-0">{new Date(c.created_at).toLocaleDateString()}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : drillDown.level === "list" && drillDown.type === "employees" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {employees.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 col-span-full">No employees found</div>
+              ) : employees.map((e: any) => (
+                <div key={e.id} className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center">
+                    <UserCheck size={24} className="text-cyan-600" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800 text-center">{e.name}</span>
+                  <span className="text-xs text-slate-500">{e.designation ?? "Employee"}</span>
+                  <span className="text-xs text-slate-400">{e.email}</span>
+                  {e.phone && <span className="text-xs text-slate-400">{e.phone}</span>}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </Card>
+      )}
 
       {/* Master Problems Section */}
       {masterProblems.length > 0 && (
