@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -88,7 +88,7 @@ export function SectionTitle({ children, action }: { children: ReactNode; action
 }
 
 // Detect media type and render appropriate element
-export function MediaItem({ url, className }: { url: string; className?: string }) {
+export function MediaItem({ url, className, onClick }: { url: string; className?: string; onClick?: () => void }) {
   // Check data URL MIME type first (most reliable for base64 data)
   const isDataVideo = url.startsWith("data:video");
   const isDataAudio = url.startsWith("data:audio");
@@ -102,18 +102,111 @@ export function MediaItem({ url, className }: { url: string; className?: string 
 
   if (isAudio) {
     return (
-      <div className={cn("flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2", className)}>
+      <div className={cn("flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 cursor-pointer hover:bg-slate-100 transition", className)} onClick={onClick}>
         <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
-        <audio src={url} controls className="flex-1 h-8 min-w-0" />
+        <audio src={url} controls className="flex-1 h-8 min-w-0" onClick={(e) => e.stopPropagation()} />
       </div>
     );
   }
 
   if (isVideo) {
-    return <video src={url} controls className={cn("rounded-lg object-cover", className)} />;
+    return (
+      <div className={cn("relative rounded-lg overflow-hidden cursor-pointer group", className)} onClick={onClick}>
+        <video src={url} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
+    );
   }
 
-  return <img src={url} alt="Evidence" className={cn("rounded-lg object-cover", className)} />;
+  return (
+    <div className={cn("relative rounded-lg overflow-hidden cursor-pointer group", className)} onClick={onClick}>
+      <img src={url} alt="Evidence" className="w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// Media viewer modal for full-screen viewing
+export function MediaViewer({ urls, initialIndex, onClose }: { urls: string[]; initialIndex: number; onClose: () => void }) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const url = urls[currentIndex];
+
+  const isVideo = url.startsWith("data:video") || url.match(/\.(mp4|mov)$/i);
+  const isAudio = url.startsWith("data:audio") || url.match(/\.(mp3|wav|ogg|aac|m4a)$/i);
+
+  const goNext = () => setCurrentIndex(i => (i + 1) % urls.length);
+  const goPrev = () => setCurrentIndex(i => (i - 1 + urls.length) % urls.length);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") goNext();
+      if (e.key === "ArrowLeft") goPrev();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        {/* Close button */}
+        <button onClick={onClose} className="absolute top-4 right-4 z-10 text-white hover:text-slate-300 transition">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Navigation buttons */}
+        {urls.length > 1 && (
+          <>
+            <button onClick={goPrev} className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-slate-300 transition bg-black/50 rounded-full p-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button onClick={goNext} className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-slate-300 transition bg-black/50 rounded-full p-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </>
+        )}
+
+        {/* Media content */}
+        <div className="flex-1 flex items-center justify-center min-h-0">
+          {isAudio ? (
+            <div className="flex flex-col items-center gap-6 text-white">
+              <svg className="w-32 h-32 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+              </svg>
+              <audio src={url} controls autoPlay className="w-full max-w-md" />
+            </div>
+          ) : isVideo ? (
+            <video src={url} controls autoPlay className="max-w-full max-h-full object-contain" />
+          ) : (
+            <img src={url} alt="Evidence" className="max-w-full max-h-full object-contain" />
+          )}
+        </div>
+
+        {/* Counter */}
+        {urls.length > 1 && (
+          <div className="text-center text-white text-sm mt-4">
+            {currentIndex + 1} / {urls.length}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

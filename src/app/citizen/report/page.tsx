@@ -17,12 +17,11 @@ export default function ReportProblemPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [recording, setRecording] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [videoBase64, setVideoBase64] = useState<string | null>(null);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [imageName, setImageName] = useState<string | null>(null);
-  const [videoName, setVideoName] = useState<string | null>(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imageNames, setImageNames] = useState<string[]>([]);
+  const [videoUrls, setVideoUrls] = useState<string[]>([]);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
+  const [videoNames, setVideoNames] = useState<string[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoKey, setVideoKey] = useState(0);
@@ -215,35 +214,67 @@ export default function ReportProblemPage() {
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>, kind: "image" | "video") {
-    const file = e.target.files?.[0]; if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     setUploadError(null);
 
     if (kind === "video") {
-      // Store file object directly for reliable preview
-      setVideoFile(file);
-      const blobUrl = URL.createObjectURL(file);
-      setVideoUrl(blobUrl);
-      setVideoName(file.name);
+      // Handle multiple video files
+      const newVideoUrls: string[] = [];
+      const newVideoFiles: File[] = [];
+      const newVideoNames: string[] = [];
+
+      Array.from(files).forEach((file) => {
+        const blobUrl = URL.createObjectURL(file);
+        newVideoUrls.push(blobUrl);
+        newVideoFiles.push(file);
+        newVideoNames.push(file.name);
+      });
+
+      setVideoUrls(prev => [...prev, ...newVideoUrls]);
+      setVideoFiles(prev => [...prev, ...newVideoFiles]);
+      setVideoNames(prev => [...prev, ...newVideoNames]);
       setVideoLoading(true);
-      setVideoKey(k => k + 1); // Force video element remount
-      // Also convert to base64 in background for submission
-      const reader = new FileReader();
-      reader.onload = () => setVideoBase64(reader.result as string);
-      reader.onerror = () => setUploadError("Failed to process video. Please try a smaller file.");
-      reader.readAsDataURL(file);
+      setVideoKey(k => k + 1);
     } else {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImageUrl(reader.result as string);
-        setImageName(file.name);
-      };
-      reader.onerror = () => setUploadError(": Failed to read image. Please try again.");
-      reader.readAsDataURL(file);
+      // Handle multiple image files
+      const newImageUrls: string[] = [];
+      const newImageNames: string[] = [];
+
+      Array.from(files).forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          newImageUrls.push(reader.result as string);
+          newImageNames.push(file.name);
+          // Update state when all files are processed
+          if (newImageUrls.length === files.length) {
+            setImageUrls(prev => [...prev, ...newImageUrls]);
+            setImageNames(prev => [...prev, ...newImageNames]);
+          }
+        };
+        reader.onerror = () => setUploadError("Failed to read image. Please try again.");
+        reader.readAsDataURL(file);
+      });
     }
+
+    // Reset input to allow selecting the same file again
+    e.target.value = "";
   }
 
-  function removeImage() { setImageUrl(null); setImageName(null); }
-  function removeVideo() { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); setVideoUrl(null); setVideoBase64(null); setVideoFile(null); setVideoName(null); setVideoLoading(false); }
+  function removeImage(index: number) {
+    setImageUrls(prev => prev.filter((_, i) => i !== index));
+    setImageNames(prev => prev.filter((_, i) => i !== index));
+  }
+  function removeVideo(index: number) {
+    setVideoUrls(prev => {
+      const url = prev[index];
+      if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== index);
+    });
+    setVideoFiles(prev => prev.filter((_, i) => i !== index));
+    setVideoNames(prev => prev.filter((_, i) => i !== index));
+    setVideoLoading(false);
+  }
 
   function useCurrentLocation() {
     setLocating(true); setLocationError(null);
@@ -298,36 +329,69 @@ export default function ReportProblemPage() {
         }
       }
 
-      // Upload video separately if it exists and is under 3MB
-      let videoUrl: string | null = null;
-      if (videoFile && videoFile.size <= 3 * 1024 * 1024) {
-        try {
-          const formData = new FormData();
-          formData.append("file", videoFile);
-          const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-          if (uploadRes.ok) {
-            const uploadData = await uploadRes.json();
-            videoUrl = uploadData.url;
-          } else {
-            console.warn("[Report] Video upload failed:", uploadRes.status);
+      // Upload all videos and images via upload API
+      const allMediaUrls: string[] = [];
+      const uploadPromises: Promise<void>[] = [];
+
+      // Upload images (convert from base64 data URLs to files)
+      imageUrls.forEach((dataUrl, index) => {
+        const promise = (async () => {
+          try {
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            const file = new File([blob], imageNames[index] || "image.jpg", { type: blob.type });
+            const formData = new FormData();
+            formData.append("file", file);
+            const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+            if (uploadRes.ok) {
+              const uploadData = await uploadRes.json();
+              allMediaUrls[index] = uploadData.url;
+            }
+          } catch (e) {
+            console.error("[Report] Failed to upload image:", e);
           }
-        } catch (e) {
-          console.error("[Report] Failed to upload video:", e);
-        }
-      } else if (videoFile && videoFile.size > 3 * 1024 * 1024) {
-        console.warn("[Report] Video too large (>3MB), skipping upload");
-        setSubmitError("Video is too large (max 3MB). Please use a smaller video or remove it.");
-        setSubmitting(false);
-        return;
+        })();
+        uploadPromises.push(promise);
+      });
+
+      // Upload videos
+      videoFiles.forEach((file, index) => {
+        const promise = (async () => {
+          if (file.size > 3 * 1024 * 1024) {
+            console.warn("[Report] Video too large (>3MB), skipping:", file.name);
+            return;
+          }
+          try {
+            const formData = new FormData();
+            formData.append("file", file);
+            const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+            if (uploadRes.ok) {
+              const uploadData = await uploadRes.json();
+              allMediaUrls[imageUrls.length + index] = uploadData.url;
+            }
+          } catch (e) {
+            console.error("[Report] Failed to upload video:", e);
+          }
+        })();
+        uploadPromises.push(promise);
+      });
+
+      // Wait for all uploads to complete
+      await Promise.all(uploadPromises);
+
+      // Add audio to media URLs
+      if (audioBase64) {
+        allMediaUrls.push(audioBase64);
       }
 
       const payload = {
         title: title || undefined,
         description,
         language: /[\u0600-\u06FF]/.test(description) ? "UR" : "EN",
-        hasImage: !!imageUrl, hasVideo: !!videoFile, hasAudio: !!audioBase64,
-        videoFileName: videoName || undefined,
-        mediaUrls: [imageUrl, audioBase64, videoUrl].filter(Boolean),
+        hasImage: imageUrls.length > 0,
+        hasVideo: videoFiles.length > 0,
+        hasAudio: !!audioBase64,
+        mediaUrls: allMediaUrls.filter(Boolean),
         latitude: position[0], longitude: position[1],
         address: address || undefined, area: area || undefined,
         confirmedDepartmentId: selectedDeptId,
@@ -403,7 +467,15 @@ export default function ReportProblemPage() {
         <p className="text-sm text-slate-500">Your complaint has been sent to the department. You will be notified when it is assigned and resolved.</p>
         <div className="flex w-full gap-3">
           <Button className="flex-1" onClick={() => router.push("/citizen/complaints")}>View My Complaints</Button>
-          <Button variant="secondary" className="flex-1" onClick={() => { if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl); if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl); setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId(""); setImageUrl(null); setImageName(null); setVideoUrl(null); setVideoBase64(null); setVideoFile(null); setVideoName(null); setVideoLoading(false); setVideoKey(0); setAudioBlobUrl(null); setShowMicReset(false); setStep(0); }}>
+          <Button variant="secondary" className="flex-1" onClick={() => {
+            videoUrls.forEach(url => { if (url?.startsWith("blob:")) URL.revokeObjectURL(url); });
+            if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+            setResult(null); setDescription(""); setTitle(""); setPosition(null); setSelectedDeptId("");
+            setImageUrls([]); setImageNames([]);
+            setVideoUrls([]); setVideoFiles([]); setVideoNames([]);
+            setVideoLoading(false); setVideoKey(0);
+            setAudioBlobUrl(null); setShowMicReset(false); setStep(0);
+          }}>
             Submit Another
           </Button>
         </div>
@@ -439,50 +511,58 @@ export default function ReportProblemPage() {
               {recording ? "Stop" : "Record voice"}
             </button>
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-              <ImageIcon size={16} />{imageUrl ? (imageName || "Image added") : "Add photo"}
-              <input type="file" accept="image/*" className="hidden" onChange={e => handleFileChange(e, "image")} />
+              <ImageIcon size={16} />{imageUrls.length > 0 ? `${imageUrls.length} photo(s) added` : "Add photo(s)"}
+              <input type="file" accept="image/*" multiple className="hidden" onChange={e => handleFileChange(e, "image")} />
             </label>
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-              <Video size={16} />{videoUrl ? (videoName || "Video added") : "Add video"}
-              <input type="file" accept="video/*" className="hidden" onChange={e => handleFileChange(e, "video")} />
+              <Video size={16} />{videoUrls.length > 0 ? `${videoUrls.length} video(s) added` : "Add video(s)"}
+              <input type="file" accept="video/*" multiple className="hidden" onChange={e => handleFileChange(e, "video")} />
             </label>
           </div>
-          {imageUrl && (
-            <div className="flex flex-col gap-1.5">
-              <img src={imageUrl} alt="Evidence" className="h-40 w-full rounded-lg object-cover" />
-              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                <span className="truncate text-xs text-slate-600 max-w-[80%]">{imageName}</span>
-                <button type="button" onClick={removeImage} className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  Remove
-                </button>
-              </div>
+          {imageUrls.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {imageUrls.map((url, index) => (
+                <div key={index} className="flex flex-col gap-1.5">
+                  <img src={url} alt={`Evidence ${index + 1}`} className="h-40 w-full rounded-lg object-cover" />
+                  <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                    <span className="truncate text-xs text-slate-600 max-w-[80%]">{imageNames[index]}</span>
+                    <button type="button" onClick={() => removeImage(index)} className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-          {videoUrl && (
-            <div className="flex flex-col gap-1.5">
-              <div className="relative h-40 w-full rounded-lg bg-slate-900 overflow-hidden">
-                {videoLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 size={24} className="animate-spin text-white" />
+          {videoUrls.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {videoUrls.map((url, index) => (
+                <div key={index} className="flex flex-col gap-1.5">
+                  <div className="relative h-40 w-full rounded-lg bg-slate-900 overflow-hidden">
+                    {videoLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 size={24} className="animate-spin text-white" />
+                      </div>
+                    )}
+                    <video
+                      key={`${videoKey}-${index}`}
+                      src={url}
+                      className="h-full w-full object-cover"
+                      controls
+                      onLoadedData={() => setVideoLoading(false)}
+                      onError={() => setVideoLoading(false)}
+                    />
                   </div>
-                )}
-                <video
-                  key={videoKey}
-                  src={videoUrl}
-                  className="h-full w-full object-cover"
-                  controls
-                  onLoadedData={() => setVideoLoading(false)}
-                  onError={() => setVideoLoading(false)}
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                <span className="truncate text-xs text-slate-600 max-w-[80%]">{videoName}</span>
-                <button type="button" onClick={removeVideo} className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  Remove
-                </button>
-              </div>
+                  <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                    <span className="truncate text-xs text-slate-600 max-w-[80%]">{videoNames[index]}</span>
+                    <button type="button" onClick={() => removeVideo(index)} className="flex items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
           {audioBlobUrl && (
@@ -585,8 +665,9 @@ export default function ReportProblemPage() {
           <Field label="Location" value={`${position?.[0].toFixed(4)}, ${position?.[1].toFixed(4)}${area ? ` — ${area}` : ""}`} />
           <Field label="Department" value={departments.find(d => d.id === selectedDeptId)?.name ?? "—"} />
           {selectedCategoryId && <Field label="Category" value={categories.find(c => c.id === selectedCategoryId)?.name ?? "—"} />}
-          {imageUrl && <Field label="Photo" value={imageName || "Attached"} />}
-          {videoUrl && <Field label="Video" value={videoName || "Attached"} />}
+          {imageUrls.length > 0 && <Field label="Photos" value={`${imageUrls.length} photo(s) attached`} />}
+          {videoUrls.length > 0 && <Field label="Videos" value={`${videoUrls.length} video(s) attached`} />}
+          {audioBlobUrl && <Field label="Audio" value="Voice recording attached" />}
           {submitError && <div className="rounded-lg bg-red-50 p-3 text-xs text-red-700">{submitError}</div>}
         </Card>
       )}

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Card, Button, MediaItem } from "@/components/ui";
+import { Card, Button, MediaItem, MediaViewer } from "@/components/ui";
 import { StatusBadge } from "@/components/badges";
 import { CheckCircle2, Circle, Clock, AlertTriangle } from "lucide-react";
 
@@ -13,6 +13,8 @@ export default function CitizenComplaintDetail() {
   const [updates, setUpdates] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   // Verification
   const [verifyResponse, setVerifyResponse] = useState<"YES" | "NO" | null>(null);
@@ -172,7 +174,7 @@ export default function CitizenComplaintDetail() {
         {media.length > 0 && (
           <div className="mt-3 flex gap-2 flex-wrap">
             {media.map((url: string, i: number) =>
-              <MediaItem key={i} url={url} className="h-24 w-24 sm:h-32 sm:w-32" />
+              <MediaItem key={i} url={url} className="h-24 w-24 sm:h-32 sm:w-32" onClick={() => { setViewerIndex(i); setViewerOpen(true); }} />
             )}
           </div>
         )}
@@ -223,6 +225,9 @@ export default function CitizenComplaintDetail() {
           <div className="mt-1 text-sm text-slate-600">{new Date(complaint.deadline).toLocaleDateString()}</div>
         </Card>
       )}
+
+      {/* Media Viewer Modal */}
+      {viewerOpen && <MediaViewer urls={media} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} />}
     </div>
   );
 }
