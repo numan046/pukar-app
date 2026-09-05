@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Card, Button } from "@/components/ui";
+import { Card, Button, MediaViewer } from "@/components/ui";
 import dynamic from "next/dynamic";
 const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), {
   ssr: false,
@@ -174,7 +174,9 @@ export default function CmDashboard() {
     PENDING: true, ASSIGNED: true, IN_PROGRESS: true, MARKED_RESOLVED: true, RESOLVED: true, OFFICER_REVIEW: true,
   });
   const [receiptMarker, setReceiptMarker] = useState<any>(null);
-  const [mediaViewer, setMediaViewer] = useState<{ url: string; type: string } | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerUrls, setViewerUrls] = useState<string[]>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   // Complaint list modal state
   const [showComplaintList, setShowComplaintList] = useState(false);
@@ -634,9 +636,8 @@ export default function CmDashboard() {
                           const isImage = isDataImage || /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url);
                           const isVideo = isDataVideo || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
                           const isAudio = isDataAudio || /\.(mp3|wav|ogg|aac|m4a)(\?|$)/i.test(url);
-                          const mediaType = isImage ? "image" : isVideo ? "video" : isAudio ? "audio" : "file";
                           return (
-                            <button key={i} onClick={() => setMediaViewer({ url, type: mediaType })} className="block rounded-lg overflow-hidden border border-slate-200 hover:border-brand-400 transition-colors group cursor-pointer">
+                            <button key={i} onClick={() => { setViewerUrls(group.urls); setViewerIndex(i); setViewerOpen(true); }} className="block rounded-lg overflow-hidden border border-slate-200 hover:border-brand-400 transition-colors group cursor-pointer">
                               {isImage ? (
                                 <img src={url} alt={`Attachment ${i + 1}`} className="w-full h-20 object-cover group-hover:scale-105 transition-transform" />
                               ) : isVideo ? (
@@ -745,34 +746,7 @@ export default function CmDashboard() {
       })()}
 
       {/* Media Viewer Modal */}
-      {mediaViewer && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4" onClick={() => setMediaViewer(null)}>
-          <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2">
-              <span className="text-sm font-medium text-slate-700 capitalize">{mediaViewer.type} Viewer</span>
-              <button onClick={() => setMediaViewer(null)} className="rounded-lg p-1 hover:bg-slate-100">
-                <X size={18} className="text-slate-500" />
-              </button>
-            </div>
-            <div className="flex-1 flex items-center justify-center p-4 min-h-0 overflow-auto">
-              {mediaViewer.type === "image" ? (
-                <img src={mediaViewer.url} alt="Full view" className="max-w-full max-h-[70vh] object-contain rounded-lg" />
-              ) : mediaViewer.type === "video" ? (
-                <video src={mediaViewer.url} controls autoPlay className="max-w-full max-h-[70vh] rounded-lg" />
-              ) : mediaViewer.type === "audio" ? (
-                <div className="flex flex-col items-center gap-4 w-full">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-indigo-200 flex items-center justify-center">
-                    <svg className="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
-                  </div>
-                  <audio src={mediaViewer.url} controls autoPlay className="w-full max-w-md" />
-                </div>
-              ) : (
-                <a href={mediaViewer.url} target="_blank" rel="noopener noreferrer" className="text-brand-600 underline text-sm">Open file in new tab</a>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {viewerOpen && <MediaViewer urls={viewerUrls} initialIndex={viewerIndex} onClose={() => setViewerOpen(false)} />}
 
       {/* Broadcast Modal */}
       {showBroadcast && (
@@ -955,9 +929,8 @@ export default function CmDashboard() {
                           const isDataVideo = /^data:video\//i.test(url);
                           const isImage = isDataImage || /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url);
                           const isVideo = isDataVideo || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
-                          const mediaType = isImage ? "image" : isVideo ? "video" : "file";
                           return (
-                            <button key={i} onClick={() => setMediaViewer({ url, type: mediaType })} className="block rounded-lg overflow-hidden border border-slate-200 hover:border-brand-400 transition-colors group cursor-pointer">
+                            <button key={i} onClick={() => { setViewerUrls(group.urls); setViewerIndex(i); setViewerOpen(true); }} className="block rounded-lg overflow-hidden border border-slate-200 hover:border-brand-400 transition-colors group cursor-pointer">
                               {isImage ? (
                                 <img src={url} alt={`Attachment ${i + 1}`} className="w-full h-20 object-cover group-hover:scale-105 transition-transform" />
                               ) : isVideo ? (
