@@ -61,7 +61,8 @@ export default function OfficerComplaintDetail() {
         setAssignEmployeeId("");
         setAssignDeadline("");
         setAssignInstructions("");
-        setToast({ message: "Employee assigned successfully!", type: "success" });
+        const isReassign = employee !== null;
+        setToast({ message: isReassign ? "Employee reassigned successfully!" : "Employee assigned successfully!", type: "success" });
         setTimeout(() => setToast(null), 5000);
         load();
       } else {
