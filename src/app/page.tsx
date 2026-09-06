@@ -163,11 +163,11 @@ export default function HomePage() {
 
   if (checkingSession || showLogo) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-white">
-        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(600px_400px_at_50%_45%,rgba(26,176,130,0.12),transparent_70%)]" />
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
+        <AuroraBg />
         <div className="relative">
           <div aria-hidden className="absolute inset-0 -z-10 scale-125 rounded-full bg-brand-300/30 blur-3xl animate-float-slow" />
-          <img src="/logo.png" alt="Pukar" className="w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72 object-contain" style={{ animation: "pukarGrow 1.2s ease-out forwards" }} />
+          <img src="/logo.png" alt="Pukar" className="w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72 object-contain drop-shadow-2xl" style={{ animation: "pukarGrow 1.2s ease-out forwards" }} />
         </div>
       </div>
     );
@@ -231,7 +231,8 @@ export default function HomePage() {
     <div className="relative flex min-h-screen items-center justify-center p-4" dir={isUrdu ? "rtl" : "ltr"}>
       <AuroraBg />
       <div className="relative grid w-full max-w-4xl gap-4 sm:gap-6 md:grid-cols-2 animate-fade-in-up">
-        <Card className="glass p-6 sm:p-8">
+        <Card className="glass relative p-6 sm:p-8">
+          <div className="absolute inset-x-0 top-0 h-1 rounded-t-xl bg-gradient-to-r from-brand-700 via-brand-500 to-brand-300" />
           <WordMark />
           <div className="mt-6 flex rounded-xl bg-slate-900/5 p-1 text-sm font-semibold">
             <button

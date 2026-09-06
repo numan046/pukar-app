@@ -67,14 +67,17 @@ export default function MasterProblemDetail() {
         setAssignEmployeeId("");
         setAssignDeadline("");
         setAssignInstructions("");
-        alert("✓ Employee assigned successfully!");
+        setToast({ message: "Employee assigned successfully!", type: "success" });
+        setTimeout(() => setToast(null), 5000);
         load();
       } else {
         const err = await res.json().catch(() => ({}));
-        alert("✕ " + (err.error || "Failed to assign employee."));
+        setToast({ message: err.error || "Failed to assign employee.", type: "error" });
+        setTimeout(() => setToast(null), 5000);
       }
     } catch {
-      alert("✕ Network error. Please try again.");
+      setToast({ message: "Network error. Please try again.", type: "error" });
+      setTimeout(() => setToast(null), 5000);
     }
     setBusy(false);
   }
