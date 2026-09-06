@@ -28,8 +28,6 @@ export default function EmployeeDashboard() {
     };
   }, [complaints]);
 
-  if (!user) return null;
-
   const resolutionRate = stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0;
 
   const filteredComplaints = useMemo(() => {
@@ -43,6 +41,8 @@ export default function EmployeeDashboard() {
     }
     return complaints;
   }, [complaints, drillDown]);
+
+  if (!user) return null;
 
   return (
     <div>

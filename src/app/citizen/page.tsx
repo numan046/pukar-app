@@ -19,8 +19,6 @@ export default function CitizenHome() {
     fetch("/api/complaints").then(r => r.json()).then(d => setComplaints(d.complaints ?? []));
   }, []);
 
-  if (!user) return null;
-
   const active = complaints.filter(c => !["RESOLVED"].includes(c.status)).length;
   const resolved = complaints.filter(c => c.status === "RESOLVED").length;
   const needsVerify = complaints.filter(c => c.status === "MARKED_RESOLVED").length;
@@ -32,6 +30,8 @@ export default function CitizenHome() {
     if (drillDown.statusFilter === "VERIFY") return complaints.filter(c => c.status === "MARKED_RESOLVED");
     return complaints;
   }, [complaints, drillDown]);
+
+  if (!user) return null;
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
