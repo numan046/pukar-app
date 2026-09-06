@@ -50,30 +50,19 @@ export default function CitizenHome() {
       </Link>
 
       <div className="grid grid-cols-3 gap-2">
-        <div className={`cursor-pointer hover:shadow-md transition-shadow ${drillDown?.statusFilter === "ACTIVE" ? "ring-2 ring-brand-500" : ""}`} onClick={() => setDrillDown({ statusFilter: "ACTIVE", title: "Active" })}>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrillDown({ statusFilter: "ACTIVE", title: "Active Complaints" })}>
           <Card className="p-2.5 sm:p-4 text-center"><div className="text-lg sm:text-2xl font-bold text-slate-900">{active}</div><div className="text-[10px] sm:text-xs font-medium text-slate-500">Active</div></Card>
         </div>
-        <div className={`cursor-pointer hover:shadow-md transition-shadow ${drillDown?.statusFilter === "RESOLVED" ? "ring-2 ring-brand-500" : ""}`} onClick={() => setDrillDown({ statusFilter: "RESOLVED", title: "Resolved" })}>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrillDown({ statusFilter: "RESOLVED", title: "Resolved Complaints" })}>
           <Card className="p-2.5 sm:p-4 text-center"><div className="text-lg sm:text-2xl font-bold text-emerald-600">{resolved}</div><div className="text-[10px] sm:text-xs font-medium text-slate-500">Resolved</div></Card>
         </div>
-        <div className={`cursor-pointer hover:shadow-md transition-shadow ${drillDown?.statusFilter === "VERIFY" ? "ring-2 ring-brand-500" : ""}`} onClick={() => setDrillDown({ statusFilter: "VERIFY", title: "To Verify" })}>
+        <div className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrillDown({ statusFilter: "VERIFY", title: "To Verify" })}>
           <Card className="p-2.5 sm:p-4 text-center">
             <div className={`text-lg sm:text-2xl font-bold ${needsVerify > 0 ? "text-orange-600" : "text-slate-400"}`}>{needsVerify}</div>
             <div className="text-[10px] sm:text-xs font-medium text-slate-500">To Verify</div>
           </Card>
         </div>
       </div>
-
-      {/* Active Filter Badge */}
-      {drillDown && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-slate-500">Showing:</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">
-            {drillDown.title} ({filteredComplaints.length})
-            <button onClick={() => setDrillDown(null)} className="ml-1 hover:text-brand-900"><X size={12} /></button>
-          </span>
-        </div>
-      )}
 
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <Link href="/citizen/complaints">
@@ -93,19 +82,17 @@ export default function CitizenHome() {
       {/* Recent Complaints */}
       <div>
         <div className="flex items-center justify-between">
-          <h2 className="text-sm sm:text-base font-bold text-slate-900">
-            {drillDown ? `${drillDown.title} Complaints` : "Recent Complaints"}
-          </h2>
+          <h2 className="text-sm sm:text-base font-bold text-slate-900">Recent Complaints</h2>
           <Link href="/citizen/complaints" className="text-[10px] sm:text-xs font-semibold text-brand-600 shrink-0">View all</Link>
         </div>
-        {filteredComplaints.length === 0 ? (
+        {complaints.length === 0 ? (
           <div className="mt-3 py-8 text-center text-slate-400">
             <p>No complaints found.</p>
             <Link href="/citizen/report" className="mt-1 inline-block text-sm font-medium text-brand-600 hover:underline">Submit your first complaint →</Link>
           </div>
         ) : (
           <div className="mt-3 flex flex-col gap-2">
-            {filteredComplaints.slice(0, 10).map((c) => (
+            {complaints.slice(0, 10).map((c) => (
               <Link key={c.id} href={`/citizen/complaints/${c.id}`}>
                 <Card className="flex items-center justify-between gap-2 sm:gap-3 p-3 sm:p-4 transition hover:border-brand-300">
                   <div className="min-w-0 flex-1">
@@ -125,6 +112,49 @@ export default function CitizenHome() {
           </div>
         )}
       </div>
+
+      {/* Drill-Down Modal */}
+      {drillDown && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4" onClick={() => setDrillDown(null)}>
+          <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 sm:px-5 py-3 rounded-t-xl">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 truncate">{drillDown.title} ({filteredComplaints.length})</h2>
+              <button onClick={() => setDrillDown(null)} className="rounded-lg p-1.5 hover:bg-slate-100 shrink-0 ml-2">
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+              {filteredComplaints.length === 0 ? (
+                <div className="py-8 text-center text-slate-400">
+                  <p>No complaints found.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {filteredComplaints.map((c) => (
+                    <Link key={c.id} href={`/citizen/complaints/${c.id}`} onClick={() => setDrillDown(null)}>
+                      <Card className="flex items-center justify-between gap-2 sm:gap-3 p-3 sm:p-4 transition hover:border-brand-300">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] sm:text-xs font-mono text-slate-400">{c.complaint_code}</span>
+                            {c.category && <span className="text-[10px] sm:text-xs text-slate-500 truncate">· {c.category}</span>}
+                          </div>
+                          <div className="mt-0.5 truncate text-xs sm:text-sm font-semibold text-slate-800">{c.title || c.description?.slice(0, 60)}</div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <StatusBadge status={c.status} />
+                          {c.status === "MARKED_RESOLVED" && <span className="text-[10px] font-bold text-orange-600">Verify →</span>}
+                        </div>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

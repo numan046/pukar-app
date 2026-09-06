@@ -315,67 +315,74 @@ export default function OfficerDashboard() {
         </div>
       </div>
 
-      {/* Drill-Down Panel */}
+      {/* Drill-Down Modal */}
       {drillDown && (
-        <Card className="mt-4 p-4 sm:p-5">
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            {drillDown.breadcrumb.map((crumb, i) => (
-              <div key={i} className="flex items-center gap-2">
-                {i > 0 && <span className="text-slate-400">/</span>}
-                <button onClick={crumb.onClick} className="text-sm font-medium text-brand-600 hover:text-brand-800 hover:underline">
-                  {crumb.label}
-                </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4" onClick={closeDrillDown}>
+          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 sm:px-5 py-3 rounded-t-xl">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                {drillDown.breadcrumb.map((crumb, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    {i > 0 && <span className="text-slate-400">/</span>}
+                    <button onClick={crumb.onClick} className="text-sm font-medium text-brand-600 hover:text-brand-800 hover:underline">
+                      {crumb.label}
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-            <button onClick={closeDrillDown} className="ml-auto text-slate-400 hover:text-slate-600">
-              <X size={18} />
-            </button>
-          </div>
-
-          {drillDown.level === "complaints" ? (
-            <div className="space-y-2">
-              {filteredComplaints.length === 0 ? (
-                <div className="py-8 text-center text-slate-400">No complaints found</div>
-              ) : (
-                filteredComplaints.map((c: any) => (
-                  <div key={c.id} onClick={() => openReceipt(c.id)} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-brand-400 hover:bg-slate-50 cursor-pointer transition-colors">
-                    <div className="flex-1 min-w-0 mr-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-[10px] sm:text-xs text-slate-500">{c.complaint_code}</span>
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-medium ${
-                          c.status === "RESOLVED" ? "bg-emerald-100 text-emerald-700" :
-                          c.status === "PENDING" ? "bg-amber-100 text-amber-700" :
-                          c.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
-                          c.status === "OFFICER_REVIEW" ? "bg-red-100 text-red-700" :
-                          "bg-slate-100 text-slate-700"
-                        }`}>{c.status.replace(/_/g, " ")}</span>
+              <button onClick={closeDrillDown} className="rounded-lg p-1.5 hover:bg-slate-100 shrink-0 ml-2">
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+              {drillDown.level === "complaints" ? (
+                <div className="space-y-2">
+                  {filteredComplaints.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400">No complaints found</div>
+                  ) : (
+                    filteredComplaints.map((c: any) => (
+                      <div key={c.id} onClick={() => openReceipt(c.id)} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-brand-400 hover:bg-slate-50 cursor-pointer transition-colors">
+                        <div className="flex-1 min-w-0 mr-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-[10px] sm:text-xs text-slate-500">{c.complaint_code}</span>
+                            <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-medium ${
+                              c.status === "RESOLVED" ? "bg-emerald-100 text-emerald-700" :
+                              c.status === "PENDING" ? "bg-amber-100 text-amber-700" :
+                              c.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700" :
+                              c.status === "OFFICER_REVIEW" ? "bg-red-100 text-red-700" :
+                              "bg-slate-100 text-slate-700"
+                            }`}>{c.status.replace(/_/g, " ")}</span>
+                          </div>
+                          <div className="mt-1 text-xs sm:text-sm font-medium text-slate-800 truncate">{c.title || c.description?.slice(0, 60) || "No title"}</div>
+                          <div className="mt-0.5 text-[10px] sm:text-xs text-slate-500 truncate">{c.category ?? "Uncategorized"} — {c.area ?? "Unknown area"}</div>
+                        </div>
+                        <div className="text-[10px] sm:text-xs text-slate-400 shrink-0">{new Date(c.created_at).toLocaleDateString()}</div>
                       </div>
-                      <div className="mt-1 text-xs sm:text-sm font-medium text-slate-800 truncate">{c.title || c.description?.slice(0, 60) || "No title"}</div>
-                      <div className="mt-0.5 text-[10px] sm:text-xs text-slate-500 truncate">{c.category ?? "Uncategorized"} — {c.area ?? "Unknown area"}</div>
-                    </div>
-                    <div className="text-[10px] sm:text-xs text-slate-400 shrink-0">{new Date(c.created_at).toLocaleDateString()}</div>
-                  </div>
-                ))
-              )}
-            </div>
-          ) : drillDown.level === "list" && drillDown.type === "employees" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {employees.length === 0 ? (
-                <div className="py-8 text-center text-slate-400 col-span-full">No employees found</div>
-              ) : employees.map((e: any) => (
-                <div key={e.id} className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center">
-                    <UserCheck size={24} className="text-cyan-600" />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-800 text-center">{e.name}</span>
-                  <span className="text-xs text-slate-500">{e.designation ?? "Employee"}</span>
-                  <span className="text-xs text-slate-400">{e.email}</span>
-                  {e.phone && <span className="text-xs text-slate-400">{e.phone}</span>}
+                    ))
+                  )}
                 </div>
-              ))}
+              ) : drillDown.level === "list" && drillDown.type === "employees" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {employees.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400 col-span-full">No employees found</div>
+                  ) : employees.map((e: any) => (
+                    <div key={e.id} className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4">
+                      <div className="w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center">
+                        <UserCheck size={24} className="text-cyan-600" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-800 text-center">{e.name}</span>
+                      <span className="text-xs text-slate-500">{e.designation ?? "Employee"}</span>
+                      <span className="text-xs text-slate-400">{e.email}</span>
+                      {e.phone && <span className="text-xs text-slate-400">{e.phone}</span>}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Master Problems Section */}

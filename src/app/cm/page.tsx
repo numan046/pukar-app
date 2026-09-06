@@ -466,114 +466,115 @@ export default function CmDashboard() {
         <KpiCard icon={<Users size={20} className="text-cyan-600" />} label="Employees" value={kpis.totalEmployees} sub={`${kpis.totalOfficers} officers`} color="bg-cyan-50" onClick={openEmployeesDrillDown} />
       </div>
 
-      {/* Drill-Down Navigation Panel */}
+      {/* Drill-Down Modal */}
       {drillDown && (
-        <Card className="p-4 sm:p-5">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
-            {drillDown.breadcrumb.map((crumb, i) => (
-              <div key={i} className="flex items-center gap-2">
-                {i > 0 && <span className="text-slate-400">/</span>}
-                <button onClick={crumb.onClick} className="text-sm font-medium text-brand-600 hover:text-brand-800 hover:underline">
-                  {crumb.label}
-                </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4" onClick={closeDrillDown}>
+          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 sm:px-5 py-3 rounded-t-xl">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                {drillDown.breadcrumb.map((crumb, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    {i > 0 && <span className="text-slate-400">/</span>}
+                    <button onClick={crumb.onClick} className="text-sm font-medium text-brand-600 hover:text-brand-800 hover:underline">
+                      {crumb.label}
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-            <button onClick={closeDrillDown} className="ml-auto text-slate-400 hover:text-slate-600">
-              <X size={18} />
-            </button>
-          </div>
-
-          {drillDownLoading ? (
-            <div className="py-8 text-center text-slate-400">Loading...</div>
-          ) : drillDown.level === "departments" && drillDown.type === "status" ? (
-            /* Status → Departments */
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {deptStats.map((dept) => {
-                const count = drillDown.statusFilter === "TOTAL" ? dept.total
-                  : drillDown.statusFilter === "PENDING" ? dept.pending
-                  : drillDown.statusFilter === "IN_PROGRESS" ? dept.inProgress
-                  : drillDown.statusFilter === "RESOLVED" ? dept.resolved
-                  : drillDown.statusFilter === "OVERDUE" ? dept.overdue
-                  : 0;
-                if (count === 0) return null;
-                return (
-                  <button key={dept.id} onClick={() => openDepartmentComplaints(dept)}
-                    className="flex flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-400 hover:shadow-md transition-all">
-                    <Building2 size={24} className="text-brand-600" />
-                    <span className="text-sm font-semibold text-slate-800 text-center truncate w-full">{dept.name}</span>
-                    <span className="text-lg font-bold text-brand-700">{count}</span>
-                    <span className="text-[10px] text-slate-500">complaints</span>
-                  </button>
-                );
-              })}
+              <button onClick={closeDrillDown} className="rounded-lg p-1.5 hover:bg-slate-100 shrink-0 ml-2">
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
             </div>
-          ) : drillDown.level === "departments" && drillDown.type === "employees" ? (
-            /* Employees → Departments */
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {employeeHierarchy.map((dept) => (
-                <button key={dept.id} onClick={() => openDepartmentCmos(dept)}
-                  className="flex flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-400 hover:shadow-md transition-all">
-                  <Building2 size={24} className="text-cyan-600" />
-                  <span className="text-sm font-semibold text-slate-800 text-center truncate w-full">{dept.name}</span>
-                  <span className="text-lg font-bold text-cyan-700">{dept.cmo_count}</span>
-                  <span className="text-[10px] text-slate-500">CMOs</span>
-                </button>
-              ))}
-            </div>
-          ) : drillDown.level === "cmos" ? (
-            /* Department → CMOs */
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {employeeHierarchy.find(d => d.id === drillDown.deptId)?.cmos.map((cmo: any) => (
-                <button key={cmo.id} onClick={() => openCmoOfficers(cmo)}
-                  className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-400 hover:shadow-md transition-all">
-                  <div className="w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center">
-                    <Users size={24} className="text-cyan-600" />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-800 text-center">{cmo.name}</span>
-                  <span className="text-xs text-slate-500">{cmo.email}</span>
-                  <span className="text-lg font-bold text-cyan-700">{cmo.officer_count}</span>
-                  <span className="text-[10px] text-slate-500">District Officers</span>
-                </button>
-              ))}
-            </div>
-          ) : drillDown.level === "officers" ? (
-            /* CMO → District Officers */
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {employeeHierarchy.find(d => d.id === drillDown.deptId)?.cmos
-                .find((c: any) => c.id === drillDown.cmoId)?.officers.map((officer: any) => (
-                <button key={officer.id} onClick={() => openOfficerEmployees(officer)}
-                  className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 hover:border-violet-400 hover:shadow-md transition-all">
-                  <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center">
-                    <UserCheck size={24} className="text-violet-600" />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-800 text-center">{officer.name}</span>
-                  <span className="text-xs text-slate-500">{officer.designation ?? "Officer"}</span>
-                  <span className="text-xs text-slate-600 font-medium">{officer.district_name}</span>
-                  <span className="text-lg font-bold text-violet-700">{officer.employee_count}</span>
-                  <span className="text-[10px] text-slate-500">Employees</span>
-                </button>
-              ))}
-            </div>
-          ) : drillDown.level === "employees" ? (
-            /* Officer → Employees */
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {employeeHierarchy.find(d => d.id === drillDown.deptId)?.cmos
-                .find((c: any) => c.id === drillDown.cmoId)?.officers
-                .find((o: any) => o.id === drillDown.officerId)?.employees.map((emp: any) => (
-                <div key={emp.id} className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <Users size={24} className="text-emerald-600" />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-800 text-center">{emp.name}</span>
-                  <span className="text-xs text-slate-500">{emp.designation ?? "Employee"}</span>
-                  <span className="text-xs text-slate-400">{emp.email}</span>
-                  {emp.phone && <span className="text-xs text-slate-400">{emp.phone}</span>}
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+              {drillDownLoading ? (
+                <div className="py-8 text-center text-slate-400">Loading...</div>
+              ) : drillDown.level === "departments" && drillDown.type === "status" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {deptStats.map((dept) => {
+                    const count = drillDown.statusFilter === "TOTAL" ? dept.total
+                      : drillDown.statusFilter === "PENDING" ? dept.pending
+                      : drillDown.statusFilter === "IN_PROGRESS" ? dept.inProgress
+                      : drillDown.statusFilter === "RESOLVED" ? dept.resolved
+                      : drillDown.statusFilter === "OVERDUE" ? dept.overdue
+                      : 0;
+                    if (count === 0) return null;
+                    return (
+                      <button key={dept.id} onClick={() => openDepartmentComplaints(dept)}
+                        className="flex flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white p-4 hover:border-brand-400 hover:shadow-md transition-all">
+                        <Building2 size={24} className="text-brand-600" />
+                        <span className="text-sm font-semibold text-slate-800 text-center truncate w-full">{dept.name}</span>
+                        <span className="text-lg font-bold text-brand-700">{count}</span>
+                        <span className="text-[10px] text-slate-500">complaints</span>
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
+              ) : drillDown.level === "departments" && drillDown.type === "employees" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {employeeHierarchy.map((dept) => (
+                    <button key={dept.id} onClick={() => openDepartmentCmos(dept)}
+                      className="flex flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-400 hover:shadow-md transition-all">
+                      <Building2 size={24} className="text-cyan-600" />
+                      <span className="text-sm font-semibold text-slate-800 text-center truncate w-full">{dept.name}</span>
+                      <span className="text-lg font-bold text-cyan-700">{dept.cmo_count}</span>
+                      <span className="text-[10px] text-slate-500">CMOs</span>
+                    </button>
+                  ))}
+                </div>
+              ) : drillDown.level === "cmos" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {employeeHierarchy.find(d => d.id === drillDown.deptId)?.cmos.map((cmo: any) => (
+                    <button key={cmo.id} onClick={() => openCmoOfficers(cmo)}
+                      className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 hover:border-cyan-400 hover:shadow-md transition-all">
+                      <div className="w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center">
+                        <Users size={24} className="text-cyan-600" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-800 text-center">{cmo.name}</span>
+                      <span className="text-xs text-slate-500">{cmo.email}</span>
+                      <span className="text-lg font-bold text-cyan-700">{cmo.officer_count}</span>
+                      <span className="text-[10px] text-slate-500">District Officers</span>
+                    </button>
+                  ))}
+                </div>
+              ) : drillDown.level === "officers" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {employeeHierarchy.find(d => d.id === drillDown.deptId)?.cmos
+                    .find((c: any) => c.id === drillDown.cmoId)?.officers.map((officer: any) => (
+                    <button key={officer.id} onClick={() => openOfficerEmployees(officer)}
+                      className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 hover:border-violet-400 hover:shadow-md transition-all">
+                      <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center">
+                        <UserCheck size={24} className="text-violet-600" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-800 text-center">{officer.name}</span>
+                      <span className="text-xs text-slate-500">{officer.designation ?? "Officer"}</span>
+                      <span className="text-xs text-slate-600 font-medium">{officer.district_name}</span>
+                      <span className="text-lg font-bold text-violet-700">{officer.employee_count}</span>
+                      <span className="text-[10px] text-slate-500">Employees</span>
+                    </button>
+                  ))}
+                </div>
+              ) : drillDown.level === "employees" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {employeeHierarchy.find(d => d.id === drillDown.deptId)?.cmos
+                    .find((c: any) => c.id === drillDown.cmoId)?.officers
+                    .find((o: any) => o.id === drillDown.officerId)?.employees.map((emp: any) => (
+                    <div key={emp.id} className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white p-4">
+                      <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <Users size={24} className="text-emerald-600" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-800 text-center">{emp.name}</span>
+                      <span className="text-xs text-slate-500">{emp.designation ?? "Employee"}</span>
+                      <span className="text-xs text-slate-400">{emp.email}</span>
+                      {emp.phone && <span className="text-xs text-slate-400">{emp.phone}</span>}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Row 2: Pie + Department bars */}
