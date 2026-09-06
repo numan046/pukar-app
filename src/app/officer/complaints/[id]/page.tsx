@@ -61,18 +61,14 @@ export default function OfficerComplaintDetail() {
         setAssignEmployeeId("");
         setAssignDeadline("");
         setAssignInstructions("");
-        const isReassign = employee !== null;
-        setToast({ message: isReassign ? "Employee reassigned successfully!" : "Employee assigned successfully!", type: "success" });
-        setTimeout(() => setToast(null), 5000);
+        alert("✓ Employee assigned successfully!");
         load();
       } else {
         const err = await res.json().catch(() => ({}));
-        setToast({ message: err.error || "Failed to assign employee.", type: "error" });
-        setTimeout(() => setToast(null), 5000);
+        alert("✕ " + (err.error || "Failed to assign employee."));
       }
     } catch {
-      setToast({ message: "Network error. Please try again.", type: "error" });
-      setTimeout(() => setToast(null), 5000);
+      alert("✕ Network error. Please try again.");
     }
     setBusy(false);
   }
@@ -86,17 +82,14 @@ export default function OfficerComplaintDetail() {
       });
       if (res.ok) {
         setDisputeAction(""); setDisputeNote(""); setReassignId("");
-        setToast({ message: action === "REASSIGN" ? "Employee reassigned successfully!" : "Action completed successfully!", type: "success" });
-        setTimeout(() => setToast(null), 5000);
+        alert("✓ " + (action === "REASSIGN" ? "Employee reassigned successfully!" : "Action completed successfully!"));
         load();
       } else {
         const err = await res.json().catch(() => ({}));
-        setToast({ message: err.error || "Action failed.", type: "error" });
-        setTimeout(() => setToast(null), 5000);
+        alert("✕ " + (err.error || "Action failed."));
       }
     } catch {
-      setToast({ message: "Network error. Please try again.", type: "error" });
-      setTimeout(() => setToast(null), 5000);
+      alert("✕ Network error. Please try again.");
     }
     setBusy(false);
   }
@@ -326,7 +319,7 @@ export default function OfficerComplaintDetail() {
           <Card className="p-4">
             <div className="text-sm font-semibold text-slate-700">Actions</div>
             <div className="mt-3 flex flex-col gap-2">
-              {(complaint.status === "PENDING" || complaint.status === "ASSIGNED" || complaint.status === "OFFICER_REVIEW") && (
+              {(complaint.status === "PENDING" || complaint.status === "OFFICER_REVIEW") && (
                 <Button onClick={() => setShowAssign(true)}>
                   {complaint.status === "PENDING" ? "Assign Employee" : "Reassign Employee"}
                 </Button>
