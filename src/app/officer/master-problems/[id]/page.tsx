@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { createPortal } from "react-dom";
 import { Card, Button } from "@/components/ui";
 import { Users, MapPin, Clock, AlertTriangle, CheckCircle2, User, FolderKanban } from "lucide-react";
 import type { MasterProblemRow } from "@/types";
@@ -279,15 +280,18 @@ export default function MasterProblemDetail() {
           </Card>
         </div>
       )}
-
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] rounded-lg px-4 py-3 shadow-lg text-sm font-medium animate-fade-in-up ${
-          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
-        }`}>
-          {toast.message}
-        </div>
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} />}
     </div>
+  );
+}
+
+function Toast({ message, type }: { message: string; type: "success" | "error" }) {
+  return createPortal(
+    <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[200] rounded-lg px-5 py-3 shadow-xl text-sm font-semibold animate-fade-in-up ${
+      type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+    }`}>
+      {message}
+    </div>,
+    document.body
   );
 }
