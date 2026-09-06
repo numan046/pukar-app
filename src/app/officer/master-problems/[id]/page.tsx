@@ -31,6 +31,9 @@ export default function MasterProblemDetail() {
   const [assignEmployeeId, setAssignEmployeeId] = useState("");
   const [assignDeadline, setAssignDeadline] = useState("");
   const [assignInstructions, setAssignInstructions] = useState("");
+
+  // Toast notification
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [busy, setBusy] = useState(false);
 
   function load() {
@@ -59,7 +62,12 @@ export default function MasterProblemDetail() {
     });
     if (res.ok) {
       setShowAssign(false);
+      setToast({ message: "Employee assigned successfully!", type: "success" });
+      setTimeout(() => setToast(null), 3000);
       load();
+    } else {
+      setToast({ message: "Failed to assign employee. Please try again.", type: "error" });
+      setTimeout(() => setToast(null), 3000);
     }
     setBusy(false);
   }
@@ -269,6 +277,15 @@ export default function MasterProblemDetail() {
               </Button>
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] rounded-lg px-4 py-3 shadow-lg text-sm font-medium animate-fade-in-up ${
+          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+        }`}>
+          {toast.message}
         </div>
       )}
     </div>
