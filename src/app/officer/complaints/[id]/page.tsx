@@ -326,7 +326,7 @@ export default function OfficerComplaintDetail() {
           <Card className="p-4">
             <div className="text-sm font-semibold text-slate-700">Actions</div>
             <div className="mt-3 flex flex-col gap-2">
-              {(complaint.status === "PENDING" || complaint.status === "OFFICER_REVIEW") && (
+              {(complaint.status === "PENDING" || complaint.status === "ASSIGNED" || complaint.status === "OFFICER_REVIEW") && (
                 <Button onClick={() => setShowAssign(true)}>
                   {complaint.status === "PENDING" ? "Assign Employee" : "Reassign Employee"}
                 </Button>
