@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { createPortal } from "react-dom";
 import { Card, Button, MediaItem } from "@/components/ui";
 import { StatusBadge } from "@/components/badges";
 import { CheckCircle2, Circle, Clock, User, AlertTriangle } from "lucide-react";
@@ -22,6 +23,9 @@ export default function OfficerComplaintDetail() {
   const [assignDeadline, setAssignDeadline] = useState("");
   const [assignInstructions, setAssignInstructions] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Toast notification
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   // Dispute panel
   const [disputeAction, setDisputeAction] = useState("");
@@ -47,21 +51,52 @@ export default function OfficerComplaintDetail() {
   async function assignEmployee() {
     if (!assignEmployeeId || !assignDeadline) return;
     setBusy(true);
-    const res = await fetch(`/api/complaints/${params.id}/assign`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employeeId: assignEmployeeId, deadline: assignDeadline, instructions: assignInstructions }),
-    });
-    if (res.ok) { setShowAssign(false); load(); }
+    try {
+      const res = await fetch(`/api/complaints/${params.id}/assign`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId: assignEmployeeId, deadline: assignDeadline, instructions: assignInstructions }),
+      });
+      if (res.ok) {
+        setShowAssign(false);
+        setAssignEmployeeId("");
+        setAssignDeadline("");
+        setAssignInstructions("");
+        setToast({ message: "Employee assigned successfully!", type: "success" });
+        setTimeout(() => setToast(null), 5000);
+        load();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setToast({ message: err.error || "Failed to assign employee.", type: "error" });
+        setTimeout(() => setToast(null), 5000);
+      }
+    } catch {
+      setToast({ message: "Network error. Please try again.", type: "error" });
+      setTimeout(() => setToast(null), 5000);
+    }
     setBusy(false);
   }
 
   async function handleDispute(action: string) {
     setBusy(true);
-    const res = await fetch(`/api/complaints/${params.id}/dispute-action`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, note: disputeNote, newEmployeeId: action === "REASSIGN" ? reassignId : undefined }),
-    });
-    if (res.ok) { setDisputeAction(""); setDisputeNote(""); load(); }
+    try {
+      const res = await fetch(`/api/complaints/${params.id}/dispute-action`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, note: disputeNote, newEmployeeId: action === "REASSIGN" ? reassignId : undefined }),
+      });
+      if (res.ok) {
+        setDisputeAction(""); setDisputeNote(""); setReassignId("");
+        setToast({ message: action === "REASSIGN" ? "Employee reassigned successfully!" : "Action completed successfully!", type: "success" });
+        setTimeout(() => setToast(null), 5000);
+        load();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setToast({ message: err.error || "Action failed.", type: "error" });
+        setTimeout(() => setToast(null), 5000);
+      }
+    } catch {
+      setToast({ message: "Network error. Please try again.", type: "error" });
+      setTimeout(() => setToast(null), 5000);
+    }
     setBusy(false);
   }
 
@@ -383,6 +418,19 @@ export default function OfficerComplaintDetail() {
           </div>
         </div>
       )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
+  );
+}
+
+function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
+  return createPortal(
+    <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[200] rounded-lg px-5 py-3 shadow-2xl text-sm font-semibold animate-fade-in-up flex items-center gap-3 ${
+      type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+    }`}>
+      <span>{type === "success" ? "✓" : "✕"} {message}</span>
+      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100 text-lg leading-none">×</button>
+    </div>,
+    document.body
   );
 }
