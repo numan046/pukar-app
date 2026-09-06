@@ -56,19 +56,28 @@ export default function MasterProblemDetail() {
   async function assignEmployee() {
     if (!assignEmployeeId || !assignDeadline) return;
     setBusy(true);
-    const res = await fetch(`/api/master-problems/${params.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employeeId: assignEmployeeId, deadline: assignDeadline, instructions: assignInstructions }),
-    });
-    if (res.ok) {
-      setShowAssign(false);
-      setToast({ message: "Employee assigned successfully!", type: "success" });
-      setTimeout(() => setToast(null), 3000);
-      load();
-    } else {
-      setToast({ message: "Failed to assign employee. Please try again.", type: "error" });
-      setTimeout(() => setToast(null), 3000);
+    try {
+      const res = await fetch(`/api/master-problems/${params.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId: assignEmployeeId, deadline: assignDeadline, instructions: assignInstructions }),
+      });
+      if (res.ok) {
+        setShowAssign(false);
+        setAssignEmployeeId("");
+        setAssignDeadline("");
+        setAssignInstructions("");
+        setToast({ message: "Employee assigned successfully!", type: "success" });
+        setTimeout(() => setToast(null), 5000);
+        load();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setToast({ message: err.error || "Failed to assign employee.", type: "error" });
+        setTimeout(() => setToast(null), 5000);
+      }
+    } catch {
+      setToast({ message: "Network error. Please try again.", type: "error" });
+      setTimeout(() => setToast(null), 5000);
     }
     setBusy(false);
   }
@@ -280,17 +289,18 @@ export default function MasterProblemDetail() {
           </Card>
         </div>
       )}
-      {toast && <Toast message={toast.message} type={toast.type} />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }
 
-function Toast({ message, type }: { message: string; type: "success" | "error" }) {
+function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
   return createPortal(
-    <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[200] rounded-lg px-5 py-3 shadow-xl text-sm font-semibold animate-fade-in-up ${
+    <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[200] rounded-lg px-5 py-3 shadow-2xl text-sm font-semibold animate-fade-in-up flex items-center gap-3 ${
       type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
     }`}>
-      {message}
+      <span>{type === "success" ? "✓" : "✕"} {message}</span>
+      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100 text-lg leading-none">×</button>
     </div>,
     document.body
   );
