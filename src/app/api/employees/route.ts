@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { listEmployeesByDepartment, listEmployeesByDepartmentAndDistrict, createUser, getUserById } from "@/lib/db/repo";
+import { listEmployeesByDepartment, listEmployeesByDepartmentAndDistrict, listUsersByRole, createUser, getUserById } from "@/lib/db/repo";
 import { hashPassword } from "@/lib/auth";
 import { newId } from "@/lib/id";
 
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+
+  // CMO: Return all officers and employees in their department
+  if (user.role === "CMO") {
+    if (!user.departmentId) return NextResponse.json({ employees: [] });
+    const officers = await listUsersByRole("DEPARTMENT_OFFICER");
+    const employees = await listUsersByRole("EMPLOYEE");
+    // Filter to only those in the CMO's department
+    const deptOfficers = officers.filter(o => o.department_id === user.departmentId);
+    const deptEmployees = employees.filter(e => e.department_id === user.departmentId);
+    return NextResponse.json({ employees: [...deptOfficers, ...deptEmployees] });
+  }
 
   if (user.role === "DEPARTMENT_OFFICER") {
     if (!user.departmentId) return NextResponse.json({ employees: [] });
@@ -18,7 +29,6 @@ export async function GET() {
   }
 
   if (user.role === "SUPER_ADMIN") {
-    const { listUsersByRole } = await import("@/lib/db/repo");
     const employees = await listUsersByRole("EMPLOYEE");
     return NextResponse.json({ employees });
   }
