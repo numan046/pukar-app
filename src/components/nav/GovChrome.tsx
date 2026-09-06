@@ -154,7 +154,7 @@ export function GovChrome({ children }: { children: React.ReactNode }) {
         <header className="glass sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200/60 px-4 shadow-sm">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(true)} className="rounded-lg p-1 hover:bg-slate-900/5 lg:hidden"><Menu size={20} /></button>
-            <button onClick={() => router.back()} className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-sm text-slate-500 hover:bg-slate-900/5 hover:text-slate-800">
+            <button onClick={() => router.push(basePath)} className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-sm text-slate-500 hover:bg-slate-900/5 hover:text-slate-800">
               <ChevronLeft size={16} /> <span className="hidden sm:inline">Back</span>
             </button>
           </div>

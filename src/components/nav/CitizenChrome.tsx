@@ -54,7 +54,7 @@ export function CitizenChrome({ user, children }: { user: SessionUser; children:
     <div className="min-h-screen overflow-x-hidden pb-20 md:pb-0">
       <header className="glass sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200/60 px-4 py-3 shadow-sm">
         {pathname !== "/citizen" && (
-          <button onClick={() => router.back()} className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-sm font-medium text-slate-600 hover:bg-slate-900/5 transition">
+          <button onClick={() => router.push("/citizen")} className="flex items-center gap-1 rounded-lg px-1.5 py-1 text-sm font-medium text-slate-600 hover:bg-slate-900/5 transition">
             <ArrowLeft size={18} />
           </button>
         )}
